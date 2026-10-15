@@ -16,13 +16,13 @@ cuda = ["fla-core==0.5.1", "tilelang==0.1.9", "causal-conv1d==1.6.2.post1", "fla
 evaluation = ["pyarrow==23.0.1", "duckdb==1.2.2", "scipy==1.17.1", "sympy==1.14.0", "pillow==12.1.1", "nltk==3.9.2", "math-verify==0.9.0", "latex2sympy2-extended==1.11.0", "antlr4-python3-runtime==4.13.2", "sentencepiece==0.2.1", "absl-py==2.3.1", "z3-solver==4.15.4.0", "emoji==2.15.0", "syllapy==0.7.2", "langdetect==1.0.9", "immutabledict==4.2.2"]
 
 [project.entry-points."vllm.general_plugins"]
-yanchor = "vllm_yanchor:register"
+edgerock = "vllm_edgerock:register"
 
 [project.scripts]
 edgerock = "run:main"
 
 [tool.setuptools]
-py-modules = ["run", "configuration_yanchor", "modeling_yanchor", "vllm_yanchor"]
+py-modules = ["run", "configuration_edgerock", "modeling_edgerock", "vllm_edgerock"]
 
 [tool.setuptools.packages.find]
 include = ["runtime*", "sglang_models*"]

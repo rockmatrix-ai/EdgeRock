@@ -1,39 +1,12 @@
-# Evaluation results
+# EdgeRock-4B evaluation results
 
-These tables reproduce the current [English technical report](report/EdgeRock_Technical_Report.pdf). Scores, comparison groups, and metric definitions follow the report.
+EdgeRock-4B combines strong mathematical reasoning with constant-size persistent history. It reaches 82.9% mean pass@1 on AIME 2024–2026 and retains 96.3% of its Qwen3.5-4B backbone's AIME mean. The tables below reproduce the [English technical report](report/EdgeRock_Technical_Report.pdf), with separate comparisons for bounded-state capability, source-model retention, and compact-model capability.
 
-## Compact-model capability
-
-EdgeRock-4B keeps constant persistent history. The other models in this table have growing history. AIME is the equal-weight 2024–2026 mean.
-
-| Model | AIME | MMLU-Pro | SuperGPQA | GPQA-Diamond | LiveCodeBench v6 | IFEval |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| **EdgeRock-4B** | 82.9 | **79.8** | **60.0** | 64.6 | 61.6 | 88.0 |
-| Qwen3.5-4B | 86.1 | 77.7 | 52.8 | **77.3** | 75.7 | 89.6 |
-| Gemma4-E4B-it | 40.1 | 69.0 | 41.1 | 55.6 | 69.1 | 84.3 |
-| Nemotron-3-Nano-4B | 57.1 | 56.8 | 37.4 | 43.4 | 66.4 | 89.5 |
-| Phi-4-mini-reasoning | 38.9 | 38.5 | 32.2 | 48.0 | 35.3 | 45.7 |
-| MiniCPM5-2B | **87.8** | 65.3 | 40.9 | 67.7 | **83.3** | 86.3 |
-| LFM2.5-2.6B | 56.2 | 59.9 | 27.1 | 58.2 | 59.7 | **93.3** |
-
-## Source-model retention
-
-Retained is EdgeRock-4B’s score divided by Qwen3.5-4B’s score.
-
-| Benchmark | EdgeRock-4B | Qwen3.5-4B | Retained (%) |
-| --- | ---: | ---: | ---: |
-| AIME 2024 | 86.7 | 89.6 | 96.8 |
-| AIME 2025 | 77.4 | 80.8 | 95.8 |
-| AIME 2026 | 84.6 | 87.9 | 96.2 |
-| HMMT Feb 2025 | 71.8 | 74.6 | 96.2 |
-| HMMT Nov 2025 | 69.8 | 78.3 | 89.1 |
-| HMMT Feb 2026 | 63.6 | 65.9 | 96.5 |
-| MATH-500 | 97.5 | 98.0 | 99.5 |
-| AIME three-year mean | 82.9 | 86.1 | 96.3 |
+[Bounded-state models](#bounded-state-models) · [Source-model retention](#source-model-retention) · [Compact models](#compact-model-capability) · [Visual reasoning](#visual-reasoning) · [Runtime results](runtime.md)
 
 ## Bounded-state models
 
-The fixed-capacity comparison covers EdgeRock-4B and 16 bounded-state models. Scores use each benchmark’s primary metric on a 0–100 scale. Bold marks column maxima, including ties.
+EdgeRock-4B reaches 82.9% mean pass@1 on AIME 2024–2026, compared with 18.8% for RWKV-7 G1j 13.3B, the strongest evaluated bounded-state baseline on AIME. The fixed-capacity comparison covers EdgeRock-4B and 16 bounded-state models. Scores use each benchmark’s primary metric on a 0–100 scale. Bold marks column maxima, including ties.
 
 ### Mathematics
 
@@ -144,6 +117,35 @@ The fixed-capacity comparison covers EdgeRock-4B and 16 bounded-state models. Sc
 | RWKV-7 G1j 13.3B | 51.5 | 51.4 | 66.6 |
 | AHN-GDN Qwen2.5 14B | 66.5 | 56.4 | **72.3** |
 | Phi-3 Medium 4K Instruct | 51.5 | 51.1 | 62.7 |
+
+## Compact-model capability
+
+EdgeRock-4B keeps constant persistent history. The other models in this table have growing history. AIME is the equal-weight 2024–2026 mean.
+
+| Model | AIME | MMLU-Pro | SuperGPQA | GPQA-Diamond | LiveCodeBench v6 | IFEval |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| **EdgeRock-4B** | 82.9 | **79.8** | **60.0** | 64.6 | 61.6 | 88.0 |
+| Qwen3.5-4B | 86.1 | 77.7 | 52.8 | **77.3** | 75.7 | 89.6 |
+| Gemma4-E4B-it | 40.1 | 69.0 | 41.1 | 55.6 | 69.1 | 84.3 |
+| Nemotron-3-Nano-4B | 57.1 | 56.8 | 37.4 | 43.4 | 66.4 | 89.5 |
+| Phi-4-mini-reasoning | 38.9 | 38.5 | 32.2 | 48.0 | 35.3 | 45.7 |
+| MiniCPM5-2B | **87.8** | 65.3 | 40.9 | 67.7 | **83.3** | 86.3 |
+| LFM2.5-2.6B | 56.2 | 59.9 | 27.1 | 58.2 | 59.7 | **93.3** |
+
+## Source-model retention
+
+EdgeRock-4B retains 96.3% of Qwen3.5-4B’s AIME 2024–2026 mean after conversion to constant-size persistent history. Retained is EdgeRock-4B’s score divided by Qwen3.5-4B’s score, expressed as a percentage.
+
+| Benchmark | EdgeRock-4B | Qwen3.5-4B | Retained (%) |
+| --- | ---: | ---: | ---: |
+| AIME 2024 | 86.7 | 89.6 | 96.8 |
+| AIME 2025 | 77.4 | 80.8 | 95.8 |
+| AIME 2026 | 84.6 | 87.9 | 96.2 |
+| HMMT Feb 2025 | 71.8 | 74.6 | 96.2 |
+| HMMT Nov 2025 | 69.8 | 78.3 | 89.1 |
+| HMMT Feb 2026 | 63.6 | 65.9 | 96.5 |
+| MATH-500 | 97.5 | 98.0 | 99.5 |
+| AIME three-year mean | 82.9 | 86.1 | 96.3 |
 
 ## Growing-history models
 

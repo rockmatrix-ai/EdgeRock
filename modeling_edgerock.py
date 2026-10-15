@@ -1,4 +1,4 @@
-# Portions adapted from Transformers Qwen3.5; modified for YANchor inference.
+# Portions adapted from Transformers Qwen3.5; modified for EdgeRock inference.
 # Copyright 2025 The Qwen Team and The HuggingFace Inc. team. All rights reserved.
 # Licensed under Apache-2.0: https://www.apache.org/licenses/LICENSE-2.0
 from __future__ import annotations
@@ -11,9 +11,9 @@ from torch import nn
 from torch.nn import functional as F
 from transformers.models.qwen3_5.modeling_qwen3_5 import Qwen3_5RMSNorm, rotate_half
 try:
-    from .configuration_yanchor import YANchorConfig
+    from .configuration_edgerock import EdgeRockConfig
 except ImportError:
-    from configuration_yanchor import YANchorConfig
+    from configuration_edgerock import EdgeRockConfig
 
 
 def _cuda_module(name):
@@ -974,13 +974,13 @@ class Qwen3_5FixedMemoryTextModel(Qwen3_5TextModel):
         return Qwen3_5ModelOutputWithPast(last_hidden_state=hidden_states, past_key_values=past_key_values, hidden_states=all_hidden_states)
 
 class Qwen3_5FixedMemoryForCausalLM(Qwen3_5ForCausalLM):
-    config_class = YANchorConfig
+    config_class = EdgeRockConfig
     cache_class = FixedMemoryHybridDynamicCache
     _no_split_modules = ['Qwen3_5FixedMemoryDecoderLayer', 'Qwen3_5FixedWindowAttention', 'IndependentGQAMemory']
 
     def __init__(self, config: Any):
         Qwen3_5PreTrainedModel.__init__(self, config)
-        self.model = YANchorModel(config)
+        self.model = EdgeRockModel(config)
         self.vocab_size = config.vocab_size
         self.lm_head = nn.Linear(config.hidden_size, config.vocab_size, bias=False)
         self.post_init()
@@ -1056,7 +1056,7 @@ def _install_fixed_memory_modules(model: nn.Module) -> None:
 def load_fixed_memory_causal_lm(pretrained_model_name_or_path: str | Any, **kwargs: Any) -> Qwen3_5FixedMemoryForCausalLM:
     config = kwargs.pop('config', None)
     if config is None:
-        config = YANchorConfig.from_pretrained(pretrained_model_name_or_path, local_files_only=bool(kwargs.get('local_files_only', False)))
+        config = EdgeRockConfig.from_pretrained(pretrained_model_name_or_path, local_files_only=bool(kwargs.get('local_files_only', False)))
     if not is_fixed_memory_revision(config):
         raise ValueError('checkpoint is not an original-Qwen fixed-memory model')
     config.backend = kwargs.pop("backend", getattr(config, "backend", "torch"))
@@ -1077,13 +1077,13 @@ def load_model(path, **kwargs):
         bind_native_qwen_gdn_kernels(model)
     return model
 
-class YANchorModel(Qwen3_5FixedMemoryTextModel):
-    config_class = YANchorConfig
+class EdgeRockModel(Qwen3_5FixedMemoryTextModel):
+    config_class = EdgeRockConfig
 
     def __init__(self, config):
         super().__init__(config)
         _install_fixed_memory_modules(SimpleNamespace(config=config, model=self))
 
 
-class YANchorForCausalLM(Qwen3_5FixedMemoryForCausalLM):
-    config_class = YANchorConfig
+class EdgeRockForCausalLM(Qwen3_5FixedMemoryForCausalLM):
+    config_class = EdgeRockConfig

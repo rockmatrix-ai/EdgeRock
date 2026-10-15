@@ -199,4 +199,4 @@ def commit_decode(key, value, scores, active, chunk, state, indices=None):
     _gather_commit[b * g, tr.cdiv(k, 32)](state.keys, state.values, state.pending_keys, state.pending_values, state.count, active, selected, sk, sv, indices, ks, pks, cs, g, d, k, chunk, pc, tr.next_power_of_2(d), 32)
     _write_commit[b * g, tr.cdiv(k, 32)](state.keys, state.values, state.scores, state.positions, state.count, active, sk, sv, ns, np, indices, ks, ms, cs, g, d, k, chunk, tr.next_power_of_2(d), 32)
     _advance[1,](state.count, state.total, active, indices, cs, b, chunk, tr.next_power_of_2(b))
-from modeling_yanchor import IndependentGQAMemory, IndependentMemoryState, INDEPENDENT_MEMORY_REVISION
+from modeling_edgerock import IndependentGQAMemory, IndependentMemoryState, INDEPENDENT_MEMORY_REVISION

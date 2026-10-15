@@ -71,7 +71,7 @@ def _load_evaluation_lib(mode: str, repo: Path) -> Any:
             sys.path.insert(0, value)
     from langdetect import DetectorFactory
     DetectorFactory.seed = 0
-    package_name = f'_yanchor_{mode}_official'
+    package_name = f'_edgerock_{mode}_official'
     package = types.ModuleType(package_name)
     package.__path__ = [str(module_path.parent)]
     package.__package__ = package_name

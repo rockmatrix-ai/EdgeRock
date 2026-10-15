@@ -13,11 +13,12 @@ python -m venv .venv
 source .venv/bin/activate
 python -m pip install ./wheels/transformers-5.7.0.dev0-py3-none-any.whl -e .
 hf download rockmatrix-ai/EdgeRock --local-dir checkpoints/EdgeRock-4B \
-  --include '*.safetensors' '*.json' '*.py' '*.jinja' 'tokenizer*' 'vocab*' 'merges*' \
+  --include '*.safetensors' '*.json' '*.jinja' 'tokenizer*' 'vocab*' 'merges*' \
   --exclude 'evaluation_data/*'
+cp config.json configuration_edgerock.py modeling_edgerock.py checkpoints/EdgeRock-4B/
 ```
 
-The model's serialization identifiers (`modeling_yanchor`, `configuration_yanchor`, and the registered model classes) are retained so the existing checkpoint loads unchanged. The public model and service name is **EdgeRock-4B**. The runtime supplies `runtime/chat_template.jinja` for the text checkpoint; it opens the assistant reasoning segment with `<think>`.
+The runtime and checkpoint use `EdgeRockConfig`, `EdgeRockForCausalLM`, and the `edgerock` model type. The installation command copies the matching configuration and model modules from this release into the checkpoint directory. The runtime supplies `runtime/chat_template.jinja` for the text checkpoint; it opens the assistant reasoning segment with `<think>`.
 
 ### Portable PyTorch
 
@@ -143,7 +144,7 @@ The adapter has been exercised with vLLM `0.28.1rc1.dev13+g76c0c6530`, PyTorch `
 
 ```bash
 python -m pip install --no-deps --no-build-isolation -e .
-VLLM_PLUGINS=yanchor vllm serve "$PWD/checkpoints/EdgeRock-4B" \
+VLLM_PLUGINS=edgerock vllm serve "$PWD/checkpoints/EdgeRock-4B" \
   --trust-remote-code --served-model-name EdgeRock-4B \
   --chat-template "$PWD/runtime/chat_template.jinja" \
   --dtype bfloat16 --max-model-len 16384 \
@@ -154,7 +155,7 @@ VLLM_PLUGINS=yanchor vllm serve "$PWD/checkpoints/EdgeRock-4B" \
   --additional-config '{"gdn_prefill_backend":"triton"}'
 ```
 
-The plugin identifier remains `yanchor` for checkpoint compatibility. The command uses BF16 MLP execution and FP32 recurrent state.
+The `edgerock` plugin uses BF16 MLP execution and FP32 recurrent state.
 
 ### SGLang
 

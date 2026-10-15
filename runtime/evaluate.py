@@ -122,7 +122,7 @@ def evaluate(args):
     database,protocol=prepare(args)
     broker=Broker(database,args.output)
     Manager.register('broker',callable=lambda:broker)
-    manager=Manager(address=('127.0.0.1',0),authkey=b'yanchor-evaluation')
+    manager=Manager(address=('127.0.0.1',0),authkey=b'edgerock-evaluation')
     server=manager.get_server()
     port=server.address[1]
     threading.Thread(target=server.serve_forever,daemon=True).start()
@@ -164,7 +164,7 @@ def worker(args):
     import pyarrow as pa
     import pyarrow.parquet as pq
     Manager.register('broker')
-    manager=Manager(address=('127.0.0.1',args.port),authkey=b'yanchor-evaluation')
+    manager=Manager(address=('127.0.0.1',args.port),authkey=b'edgerock-evaluation')
     manager.connect()
     broker=manager.broker()
     destination=args.output/'generated'/f'rank-{args.rank}'

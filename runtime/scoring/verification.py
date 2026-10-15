@@ -10,8 +10,8 @@ import re
 import unicodedata
 from fractions import Fraction
 from typing import Any, Sequence
-RESULT_SCHEMA = 'yanchor-verdict-v1'
-EXTERNAL_REQUEST_SCHEMA = 'yanchor-verifier-request-v1'
+RESULT_SCHEMA = 'edgerock-verdict-v1'
+EXTERNAL_REQUEST_SCHEMA = 'edgerock-verifier-request-v1'
 TASK_TYPES = frozenset({'math', 'choice', 'code', 'stem', 'general', 'retrieval', 'ifeval', 'ifbench'})
 VERDICTS = frozenset({'PASS', 'FAIL', 'UNCERTAIN'})
 CPU_VERIFIER_REVISION = 'cpu_first_typed_tristate_final_answer_equivalence_v43'

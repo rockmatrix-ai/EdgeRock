@@ -1,0 +1,20 @@
+# EdgeRock
+
+> EdgeRock is Rock Matrix's family of multimodal reasoning models with constant-size persistent history. EdgeRock-4B is the first open-source release, supporting text and image reasoning through recurrent state, sliding-window attention, and Rock Memory Anchors.
+
+Persistent history is O(1) with respect to sequence length at fixed model and memory capacities. Evaluation tables separate bounded-state architectures, source-model retention, and compact-model capability. Throughput counts output tokens; end-to-end timing includes prefill. Each result page states the hardware, precision, workload, and batch selection.
+
+## Model and results
+
+- [Overview and FAQ](https://raw.githubusercontent.com/rockmatrix-ai/EdgeRock/main/README.md): model definition, memory-anchor mechanism, headline results, and common questions.
+- [Evaluation results](https://raw.githubusercontent.com/rockmatrix-ai/EdgeRock/main/docs/results.md): text and image benchmarks, comparison groups, and evaluation protocol.
+- [Inference runtime and results](https://raw.githubusercontent.com/rockmatrix-ai/EdgeRock/main/docs/runtime.md): BF16 execution, FP32 recurrence, constant history, throughput definitions, and measured workloads.
+- [Model weights](https://huggingface.co/rockmatrix-ai/EdgeRock): official EdgeRock-4B checkpoint and model card.
+
+## Implementation and citation
+
+- [Inference guide](https://raw.githubusercontent.com/rockmatrix-ai/EdgeRock/main/USAGE.md): installation, generation, serving, and evaluation commands.
+- [Technical report](https://github.com/rockmatrix-ai/EdgeRock/blob/main/docs/report/EdgeRock_Technical_Report.pdf): full English report.
+- [Citation metadata](https://raw.githubusercontent.com/rockmatrix-ai/EdgeRock/main/CITATION.cff): report authors and preferred citation.
+- [Code license](https://raw.githubusercontent.com/rockmatrix-ai/EdgeRock/main/LICENSE): Apache-2.0 terms for runtime code.
+- [Model license](https://raw.githubusercontent.com/rockmatrix-ai/EdgeRock/main/MODEL_LICENSE): terms governing the model weights.

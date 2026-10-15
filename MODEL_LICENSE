@@ -1,28 +1,28 @@
-YANchor Model License 1.0
+EdgeRock Model License 1.0
 Mandatory Supplement: Physical Hardwiring of Model Weights
 
-Released model: YANchor-4B
+Released model: EdgeRock-4B
 License version: 1.0, 7 October 2026
 Licensor: Rock Matrix (岩芯矩阵)
 Licensing contact: jihs@stonehill-tech.com
 
 Copyright 2026 Alibaba Cloud.
-Copyright 2026 the YANchor contributors.
+Copyright 2026 the EdgeRock contributors.
 
 1. Scope and governing terms
 
 This Supplement and the complete Apache License, Version 2.0, reproduced
-below together form the YANchor Model License 1.0. They apply cumulatively,
+below together form the EdgeRock Model License 1.0. They apply cumulatively,
 not as alternative licenses. Within the scope of this Supplement, it
 controls in the event of a conflict with the Apache terms.
 
 "Licensor" means Rock Matrix (岩芯矩阵), acting as the copyright owner or
-the entity authorized to grant this License for the covered YANchor material.
+the entity authorized to grant this License for the covered EdgeRock material.
 "You" has the meaning given in the Apache terms below.
 
-"Covered Model" means the YANchor-4B trained text-model weights distributed
+"Covered Model" means the EdgeRock-4B trained text-model weights distributed
 with this License, including its independent-memory weights, solely to the
-extent of the YANchor modifications and derivative model as a whole that
+extent of the EdgeRock modifications and derivative model as a whole that
 the Licensor is entitled to license on these terms.
 
 "Covered Variants" means versions made by incorporating or transforming
@@ -110,7 +110,7 @@ no other additional field-of-use restrictions or royalties.
 
 When redistributing the Covered Model or Covered Variants, include this
 complete License and retain applicable attribution and notices. The
-Supplement remains part of the license for covered YANchor material and
+Supplement remains part of the license for covered EdgeRock material and
 must not be omitted or represented as an Apache-only grant. No separate
 recipient registration or signed agreement is required by this License.
 
@@ -127,7 +127,7 @@ mandatory restriction above. Nothing in this License limits rights that
 cannot be restricted under applicable law.
 
 Apache License, Version 2.0
-General terms incorporated into YANchor Model License 1.0
+General terms incorporated into EdgeRock Model License 1.0
 
 
                                  Apache License

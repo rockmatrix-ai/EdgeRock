@@ -122,7 +122,7 @@ def code_payload(source: str, metadata: Mapping[str, Any], code: str) -> tuple[s
 @functools.lru_cache(maxsize=4)
 def load_bbeh_evaluator(path: str):
     with _BBEH_LOAD_LOCK:
-        spec = importlib.util.spec_from_file_location('yanchor_frozen_bbeh_evaluate', path)
+        spec = importlib.util.spec_from_file_location('edgerock_frozen_bbeh_evaluate', path)
         if spec is None or spec.loader is None:
             raise ImportError(f'cannot load BBEH evaluator: {path}')
         module = importlib.util.module_from_spec(spec)

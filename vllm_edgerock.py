@@ -11,11 +11,11 @@ from vllm.model_executor.layers.mamba.abstract import MambaBase
 from vllm.model_executor.models.qwen3_5 import Qwen3_5ForCausalLM, Qwen3_5DecoderLayer
 from vllm.model_executor.model_loader.weight_utils import default_weight_loader
 from vllm.v1.attention.backends.registry import MambaAttentionBackendEnum
-from modeling_yanchor import IndependentGQAMemory, IndependentMemoryState, Qwen3_5TextRotaryEmbedding
+from modeling_edgerock import IndependentGQAMemory, IndependentMemoryState, Qwen3_5TextRotaryEmbedding
 
 
 def register():
-    ModelRegistry.register_model('YANchorForCausalLM', 'vllm_yanchor:YANchorForCausalLM')
+    ModelRegistry.register_model('EdgeRockForCausalLM', 'vllm_edgerock:EdgeRockForCausalLM')
 
 
 def memory_shapes(config):
@@ -24,7 +24,7 @@ def memory_shapes(config):
     return ((2 * groups * (capacity + chunk) * dim,), (groups * (2 * capacity + chunk) + 4,))
 
 
-class YANchorMemory(IndependentGQAMemory, MambaBase):
+class EdgeRockMemory(IndependentGQAMemory, MambaBase):
     def __init__(self, config, vllm_config, prefix):
         IndependentGQAMemory.__init__(self, config)
         self.prefix = prefix
@@ -97,7 +97,7 @@ class YANchorMemory(IndependentGQAMemory, MambaBase):
         return output
 
 
-class YANchorDecoderLayer(Qwen3_5DecoderLayer):
+class EdgeRockDecoderLayer(Qwen3_5DecoderLayer):
     def forward(self, hidden_states, residual, positions=None, **kwargs):
         if residual is None:
             residual = hidden_states
@@ -109,7 +109,7 @@ class YANchorDecoderLayer(Qwen3_5DecoderLayer):
         return self.mlp(hidden_states), residual
 
 
-class YANchorForCausalLM(Qwen3_5ForCausalLM):
+class EdgeRockForCausalLM(Qwen3_5ForCausalLM):
     supports_lora = False
     supports_eagle3 = False
 
@@ -124,8 +124,8 @@ class YANchorForCausalLM(Qwen3_5ForCausalLM):
         for index in config.fixed_memory_swa_layers:
             if self.model.start_layer <= index < self.model.end_layer:
                 layer = self.model.layers[index]
-                layer.__class__ = YANchorDecoderLayer
-                layer.memory = YANchorMemory(config, vllm_config, f'{prefix + "." if prefix else ""}model.layers.{index}.memory')
+                layer.__class__ = EdgeRockDecoderLayer
+                layer.memory = EdgeRockMemory(config, vllm_config, f'{prefix + "." if prefix else ""}model.layers.{index}.memory')
                 self._memory_prefix = layer.memory.prefix
 
     def forward(self, *args, **kwargs):

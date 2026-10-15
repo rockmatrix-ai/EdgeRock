@@ -6,8 +6,8 @@ if os.environ.get("SGLANG_EXTERNAL_MODEL_PACKAGE") == "sglang_models":
     Qwen3_5TextConfig = importlib.import_module("sglang.srt.configs.qwen3_5").Qwen3_5TextConfig
 
 
-class YANchorConfig(Qwen3_5TextConfig):
-    model_type = "yanchor"
+class EdgeRockConfig(Qwen3_5TextConfig):
+    model_type = "edgerock"
 
     def __init__(self, backend="torch", prefill_chunk_size=1024, **kwargs):
         super().__init__(**kwargs)

@@ -1,20 +1,18 @@
-EdgeRock-4B (formerly YANchor-4B)
-Copyright 2026 the YANchor contributors.
+EdgeRock-4B
+Copyright 2026 the EdgeRock contributors.
 
-The model is now published as EdgeRock-4B. Checkpoint serialization names
-and the original YANchor Model License 1.0 remain unchanged.
-YANchor model licensor: Rock Matrix (岩芯矩阵).
+EdgeRock model licensor: Rock Matrix (岩芯矩阵).
 
 Based on Qwen3.5-4B, Copyright 2026 Alibaba Cloud, Apache License 2.0.
 https://huggingface.co/Qwen/Qwen3.5-4B
 
-The YANchor text model modifies the Qwen3.5-4B attention and memory
+The EdgeRock text model modifies the Qwen3.5-4B attention and memory
 architecture and includes further-trained model weights.
 
 Licensing scope for this GitHub package and its companion model:
-- MODEL_LICENSE: YANchor Model License 1.0 for covered YANchor text-model weights
+- MODEL_LICENSE: EdgeRock Model License 1.0 for covered EdgeRock text-model weights
   and covered weight-derived variants.
-- LICENSE: Apache License 2.0 for YANchor inference and evaluation code.
+- LICENSE: Apache License 2.0 for EdgeRock inference and evaluation code.
 - Original Qwen visual-frontend weights, tokenizer and processor assets,
   and unmodified upstream configuration material retain Apache License 2.0.
 - Independently licensed software, dependencies and evaluation material

@@ -1,6 +1,6 @@
-# Inference runtime and reproduction
+# EdgeRock-4B inference runtime and results
 
-The current technical report uses one Hopper 80GB GPU, tensor-parallel size one, and ordinary autoregressive decoding.
+EdgeRock-4B sustains 233.7 decode tokens/s at batch size 1 with 128K input and 128K output, and reaches 10,669 end-to-end output tokens/s at batch size 512 with 32K input and 32K output. The [technical report](report/EdgeRock_Technical_Report.pdf) measures both on one Hopper 80GB GPU with tensor-parallel size one and ordinary autoregressive decoding.
 
 ## Precision and history contract
 
@@ -15,7 +15,9 @@ The current technical report uses one Hopper 80GB GPU, tensor-parallel size one,
 | Speculative decoding | Disabled |
 | History offload | Disabled |
 
-Persistent history is 121.76 MiB per sequence, including recurrence and auxiliary tensors. The configuration-derived attention-KV capacity is 72 MiB. During decode, the local ring stores 1,023 preceding positions while the current token is supplied by the decoder, so the audited local-plus-anchor KV payload is 71.97 MiB. Full device allocation also includes weights, buffers, graphs, and workspace.
+## Constant-size persistent history
+
+EdgeRock-4B maintains 121.76 MiB of persistent history per sequence, including FP32 recurrence and auxiliary tensors, independently of sequence length. The configuration-derived attention-KV capacity is 72 MiB. During decode, the local ring stores 1,023 preceding positions while the current token is supplied by the decoder, so the audited local-plus-anchor KV payload is 71.97 MiB. Full device allocation also includes weights, buffers, graphs, and workspace.
 
 ## Optimized execution
 
@@ -51,13 +53,13 @@ Each cell is output tokens/s (best measured batch size).
 
 | Model | 4K input | 8K input | 16K input | 32K input |
 | --- | ---: | ---: | ---: | ---: |
-| EdgeRock-4B | 11,032 (512) | 10,906 (512) | 10,874 (512) | 10,669 (512) |
+| **EdgeRock-4B** | **11,032** (512) | **10,906** (512) | **10,874** (512) | **10,669** (512) |
 | Qwen3.5-4B | 3,103 (64) | 2,853 (64) | 2,472 (64) | 1,889 (64) |
 | Gemma 4 E4B | 3,940 (128) | 3,432 (128) | 2,880 (128) | 2,196 (64) |
 | MiniCPM5-2B | 3,152 (64) | 2,938 (64) | 2,575 (32) | 2,117 (32) |
 | LFM2.5-2.6B | 1,673 (64) | 1,771 (64) | 1,695 (32) | 1,727 (64) |
 
-Mean workload-specific ratios to Qwen3.5-4B and LFM2.5-2.6B are 4.36× and 6.34×. The maximum measured ratio to the source backbone is 5.65×, at 32K input and 32K output. Best-batch comparisons permit different batch sizes.
+Mean workload-specific ratios to Qwen3.5-4B and LFM2.5-2.6B are 4.36× and 6.34×. At 32K input and 32K output on one Hopper 80GB GPU, EdgeRock-4B reaches 10,669 output tokens/s at batch size 512 versus 1,889 output tokens/s for Qwen3.5-4B at batch size 64: **5.65× higher end-to-end output-token throughput**. Each model uses its best measured batch size; elapsed time includes prefill and the numerator counts output tokens only.
 
 ### Batch scaling over all 16 length pairs
 

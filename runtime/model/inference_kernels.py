@@ -1,4 +1,4 @@
-# Portions adapted from Transformers Qwen3.5; modified for YANchor inference.
+# Portions adapted from Transformers Qwen3.5; modified for EdgeRock inference.
 # Copyright 2025 The Qwen Team and The HuggingFace Inc. team. All rights reserved.
 # Licensed under Apache-2.0: https://www.apache.org/licenses/LICENSE-2.0
 from __future__ import annotations

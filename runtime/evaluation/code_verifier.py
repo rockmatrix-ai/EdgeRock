@@ -157,7 +157,7 @@ def verify(request: Mapping[str, Any]) -> dict[str, Any]:
     language = str(request.get('language') or tests.get('language') or 'python').strip().lower()
     if contract['mode'] == 'livecodebench':
         return run_livecodebench(code, tests, timeout)
-    with tempfile.TemporaryDirectory(prefix='yanchor-code-verifier-') as temporary:
+    with tempfile.TemporaryDirectory(prefix='edgerock-code-verifier-') as temporary:
         root = Path(temporary)
         suffix = '.cpp' if language in {'cpp', 'c++', 'cxx', 'cc'} else '.py'
         code_path = root / f'candidate{suffix}'

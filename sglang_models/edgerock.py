@@ -12,7 +12,7 @@ from sglang.srt.layers.logits_processor import LogitsProcessor
 from sglang.srt.layers.vocab_parallel_embedding import ParallelLMHead
 from sglang.srt.model_loader.weight_utils import default_weight_loader
 from sglang.srt.model_executor.forward_context import get_req_to_token_pool
-from modeling_yanchor import IndependentGQAMemory, IndependentMemoryState, Qwen3_5TextRotaryEmbedding
+from modeling_edgerock import IndependentGQAMemory, IndependentMemoryState, Qwen3_5TextRotaryEmbedding
 
 
 class MemorySlots:
@@ -37,10 +37,10 @@ class MemorySlots:
 
     def iter_transfer_state_entries(self):
         for f in fields(self.state):
-            yield f'yanchor_{f.name}', getattr(self.state, f.name), None, self.layer_id
+            yield f'edgerock_{f.name}', getattr(self.state, f.name), None, self.layer_id
 
 
-class YANchorMemory(IndependentGQAMemory):
+class EdgeRockMemory(IndependentGQAMemory):
     def __init__(self, config, layer_id):
         super().__init__(config)
         self.layer_id = layer_id
@@ -83,7 +83,7 @@ class YANchorMemory(IndependentGQAMemory):
         return output
 
 
-class YANchorDecoderLayer(Qwen3_5AttentionDecoderLayer):
+class EdgeRockDecoderLayer(Qwen3_5AttentionDecoderLayer):
     def forward(self, positions, hidden_states, residual, forward_batch,
                 captured_last_layer_outputs=None, **kwargs):
         hidden_states, residual = self.layer_communicator.prepare_attn_and_capture_last_layer_outputs(
@@ -95,7 +95,7 @@ class YANchorDecoderLayer(Qwen3_5AttentionDecoderLayer):
         return self.layer_communicator.postprocess_layer(hidden_states, residual, forward_batch)
 
 
-class YANchorForCausalLM(nn.Module):
+class EdgeRockForCausalLM(nn.Module):
     def __init__(self, config, quant_config=None, prefix=''):
         super().__init__()
         self.config = config
@@ -107,9 +107,9 @@ class YANchorForCausalLM(nn.Module):
         self.logits_processor = LogitsProcessor(config)
         for index in config.fixed_memory_swa_layers:
             layer = self.model.layers[index]
-            layer.__class__ = YANchorDecoderLayer
+            layer.__class__ = EdgeRockDecoderLayer
             layer.attn.sliding_window_size = config.fixed_memory_swa_window - 1
-            layer.memory = YANchorMemory(config, index)
+            layer.memory = EdgeRockMemory(config, index)
 
     @torch.no_grad()
     def forward(self, input_ids, positions, forward_batch, input_embeds=None, **kwargs):
@@ -138,4 +138,4 @@ class YANchorForCausalLM(nn.Module):
         return loaded
 
 
-EntryClass = YANchorForCausalLM
+EntryClass = EdgeRockForCausalLM

@@ -67,7 +67,7 @@ Let $u_t=\mathrm{Norm}_{\mathrm{mem}}(h_t)\in\mathbb R^D$, with $D=2{,}560$. An 
 \begin{equation}
 w_t = u_t+W_{\mathrm{down}}\!\left[\mathrm{SiLU}(W_{\mathrm{gate}}u_t)\odot W_{\mathrm{up}}u_t\right].
 \end{equation}
-RMA KV projections use the writer output $w_t$; query projections use $u_t$. The writer has an intermediate width of 2,560~\cite{yanchorcode,yanchorconfig}.
+RMA KV projections use the writer output $w_t$; query projections use $u_t$. The writer has an intermediate width of 2,560~\cite{edgerockcode,edgerockconfig}.
 
 \subsection{Causal admission in four independent KV groups}
 
@@ -75,7 +75,7 @@ A small network assigns a retention priority to each KV group:
 \begin{equation}
 a_t = W_{a,2}\,\mathrm{SiLU}(W_{a,1}u_t),\qquad a_t\in\mathbb R^4.
 \end{equation}
-Bias-free projections of size $2560\!\rightarrow\!256\!\rightarrow\!4$ compute FP32 scores from the current causal context~\cite{yanchorcode,yanchorconfig}. Each group independently retains its highest-scoring records; source positions may overlap across groups.
+Bias-free projections of size $2560\!\rightarrow\!256\!\rightarrow\!4$ compute FP32 scores from the current causal context~\cite{edgerockcode,edgerockconfig}. Each group independently retains its highest-scoring records; source positions may overlap across groups.
 
 \subsection{Blockwise commits and causal visibility}
 
@@ -100,7 +100,7 @@ Every discarded record already has at least $K$ records ahead of it, so later ca
 \subsection{Query-Dependent Retrieval from the Anchor Bank}
 \label{sec:read}
 
-A later query can address any retained record, including one whose source position has left the local window. Each module uses 16 query heads over four KV groups~\cite{gqa}, with head dimension $d=256$. Queries and keys use learned RMS normalization~\cite{rmsnorm,yanchorcode,yanchorconfig}:
+A later query can address any retained record, including one whose source position has left the local window. Each module uses 16 query heads over four KV groups~\cite{gqa}, with head dimension $d=256$. Queries and keys use learned RMS normalization~\cite{rmsnorm,edgerockcode,edgerockconfig}:
 \begin{equation}
 \operatorname{RMS}_{\gamma}(x)=\frac{\gamma\odot x}{\sqrt{d^{-1}\sum_{i=1}^{d}x_i^2+10^{-6}}}.
 \end{equation}

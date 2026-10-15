@@ -4,7 +4,7 @@ from collections import Counter
 from collections.abc import Mapping, Sequence
 from typing import Any
 import numpy as np
-THINK_PROTOCOL_REVISION = 'yanchor_think_format_v1'
+THINK_PROTOCOL_REVISION = 'edgerock_think_format_v1'
 NATURAL_FINISH_REASONS = frozenset({'eos'})
 CAP_FINISH_REASONS = frozenset({'length', 'max_tokens', 'max_new_tokens', 'max_output_tokens', 'prompt_length_cap', 'total_length_cap', 'capped'})
 TIMEOUT_FINISH_REASONS = frozenset({'timeout', 'timeout_dropped', 'generation_timeout_dropped'})
