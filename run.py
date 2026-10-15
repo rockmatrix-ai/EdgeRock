@@ -19,7 +19,6 @@ from inference import ROOT, Engine, dump
 
 def benchmark(args):
     import torch
-    from model.inference_kernels import cuda_graph_generate_top20_dynamic_refill
     engine = Engine(args.model, args.batch, args.profile, backend='cuda')
     groups = args.batch // args.k
     positions = torch.arange(args.prefill).unsqueeze(0)
@@ -39,13 +38,13 @@ def benchmark(args):
         mechanical_repetition_early_stop=False)
     with torch.inference_mode():
         started=time.perf_counter()
-        warm=cuda_graph_generate_top20_dynamic_refill(engine.model,ids,mask,**common,counter_seed=20260827,
+        warm=engine.benchmark_generate(engine.model,ids,mask,**common,counter_seed=20260827,
             max_new_tokens_per_attempt=torch.full((args.batch,),args.warmup,device='cuda',dtype=torch.long))
         cold=dict(seconds=time.perf_counter()-started,ttft_seconds=warm.metrics['initial_prefill_seconds'])
         del warm
         torch.cuda.empty_cache()
         torch.cuda.reset_peak_memory_stats()
-        result=cuda_graph_generate_top20_dynamic_refill(engine.model,ids,mask,**common,
+        result=engine.benchmark_generate(engine.model,ids,mask,**common,
             counter_seed=20260828+args.prefill+(args.batch if args.batch>1 else 0))
     metrics=result.metrics
     prefill=metrics['initial_prefill_seconds']+metrics['refill_prefill_seconds']
@@ -87,9 +86,9 @@ def serve(args):
 
         def do_GET(self):
             if self.path == '/v1/models':
-                self.send_json(dict(object='list', data=[dict(id='YANchor-4B', object='model', owned_by='RocoreMatrix')]))
+                self.send_json(dict(object='list', data=[dict(id='EdgeRock-4B', object='model', owned_by='rockmatrix-ai')]))
             else:
-                self.send_json(dict(status='READY', model='YANchor-4B', backend=engine.backend, batch_capacity=args.batch))
+                self.send_json(dict(status='READY', model='EdgeRock-4B', backend=engine.backend, batch_capacity=args.batch))
 
         def do_POST(self):
             try:
@@ -141,19 +140,19 @@ def serve(args):
                     def event(value):
                         self.wfile.write(('data: ' + json.dumps(value, ensure_ascii=False) + '\n\n').encode())
                         self.wfile.flush()
-                    event(dict(id=identity, object='chat.completion.chunk', created=created, model='YANchor-4B', choices=[dict(index=0, delta={'role':'assistant'}, finish_reason=None)]))
+                    event(dict(id=identity, object='chat.completion.chunk', created=created, model='EdgeRock-4B', choices=[dict(index=0, delta={'role':'assistant'}, finish_reason=None)]))
                     while True:
                         kind, value = queue.get()
                         if kind == 'error':
                             event({'error': {'message': value}})
                             break
                         if kind == 'text':
-                            event(dict(id=identity, object='chat.completion.chunk', created=created, model='YANchor-4B', choices=[dict(index=0, delta={'content':value}, finish_reason=None)]))
+                            event(dict(id=identity, object='chat.completion.chunk', created=created, model='EdgeRock-4B', choices=[dict(index=0, delta={'content':value}, finish_reason=None)]))
                         else:
                             text, usage, reason = value
-                            event(dict(id=identity, object='chat.completion.chunk', created=created, model='YANchor-4B', choices=[dict(index=0, delta={}, finish_reason=reason)]))
+                            event(dict(id=identity, object='chat.completion.chunk', created=created, model='EdgeRock-4B', choices=[dict(index=0, delta={}, finish_reason=reason)]))
                             if request.get('stream_options', {}).get('include_usage'):
-                                event(dict(id=identity, object='chat.completion.chunk', created=created, model='YANchor-4B', choices=[], usage=usage))
+                                event(dict(id=identity, object='chat.completion.chunk', created=created, model='EdgeRock-4B', choices=[], usage=usage))
                             break
                     self.wfile.write(b'data: [DONE]\n\n')
                     self.wfile.flush()
@@ -162,7 +161,7 @@ def serve(args):
                     rows, metrics = engine.generate(prompts, cap=cap, **settings)
                 if standard:
                     text, usage, reason = completion(rows)
-                    self.send_json(dict(id=identity, object='chat.completion', created=created, model='YANchor-4B', choices=[dict(index=0, message={'role':'assistant', 'content':text}, finish_reason=reason)], usage=usage))
+                    self.send_json(dict(id=identity, object='chat.completion', created=created, model='EdgeRock-4B', choices=[dict(index=0, message={'role':'assistant', 'content':text}, finish_reason=reason)], usage=usage))
                 else:
                     self.send_json(dict(outputs=rows, metrics=metrics))
             except (KeyError, TypeError, ValueError) as error:
@@ -183,7 +182,7 @@ def main():
         sys.argv=[sys.argv[0],*sys.argv[3:]]
         runpy.run_module('evaluation.'+{'math':'math_verifier','code':'code_verifier','instruction':'instruction_verifier'}[kind],run_name='__main__')
         return
-    parser=argparse.ArgumentParser(description='YANchor-4B inference and reproducible evaluation')
+    parser=argparse.ArgumentParser(description='EdgeRock-4B inference and reproducible evaluation')
     sub=parser.add_subparsers(dest='command',required=True)
     for name in ['demo','generate','serve','benchmark','evaluate','score','status','_worker']:
         p=sub.add_parser(name)
@@ -224,7 +223,11 @@ def main():
             p.add_argument('--suite',choices=['text','memory','vision'],default='text')
     args=parser.parse_args()
     if args.command=='benchmark':
-        args.k=args.k or (1 if args.batch==1 else 8)
+        args.k = args.k if args.k is not None else min(8, args.batch)
+        if min(args.batch, args.prefill, args.max_new_tokens, args.warmup, args.k) < 1:
+            parser.error('benchmark batch, lengths, warmup, and k must be positive')
+        if args.batch % args.k:
+            parser.error('benchmark k must divide batch size')
         benchmark(args)
     elif args.command=='serve':
         serve(args)

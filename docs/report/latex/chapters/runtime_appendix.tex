@@ -1,0 +1,55 @@
+\FloatBarrier
+\section{Runtime protocols and memory accounting}
+\label{app:runtime}
+
+\subsection{Workloads and hardware}
+All runs use one NVIDIA Hopper 80GB GPU and tensor-parallel size one. All matrix weights and KV are BF16. EdgeRock and Qwen retain FP32 recurrent state.
+
+Here $1\mathrm{K}=1{,}024$ tokens. The sustained single-request workload (batch size $=1$) is 128K input plus 128K output. A second single-request workload uses 254K input and 2K output, with three independent runs per model for EdgeRock and Qwen; both workloads total 262,144 tokens. Long-generation throughput uses 4K/8K/16K/32K inputs and 32K output. The full EdgeRock sweep combines those four input lengths with the same four output lengths at batches 32, 64, 128, 256, 320, 384, and 512. A separate 4K-input/2K-output sweep covers batch sizes 1, 2, 4, 8, 16, 32, 64, 128, 256, 320, 384, and 512. Each EdgeRock configuration uses three independent runs; rates are medians unless specified as weighted.
+
+The benchmark uses synthetic input tokens, EOS ignored, and a 256-token warmup at the target input length and batch capacity. EdgeRock uses full-vocabulary autoregressive sampling with temperature 1.0, top-$k$ 20, top-$p$ 0.95, and presence penalty 1.5.
+
+\subsection{Timed intervals and aggregation}
+\textbf{Decode rate} measures output after each request's first token, including sampling, state updates, graph management, and runtime scheduling. The single-request curves report cumulative rate every 4K output tokens. \textbf{End-to-end output-token throughput} divides the total number of generated output tokens by the full generation-call duration, including prefill time. Input tokens do not enter the token count. Both exclude model loading, warmup, tokenization, and text decoding.
+
+Mean throughput ratios weight the four 32K-output workloads equally, using each runtime's best measured batch. Weighted batch throughput divides total subsequent output tokens by total decode time across all 16 length pairs and three runs; per-sequence rate divides it by the active batch. Bands show the range across runs. Memory results use peak allocated and reserved memory across runs.
+
+\subsection{Runtime configuration and prompt reuse}
+Packed projections and fused normalization, rotary encoding, and memory operations reduce data movement. At batch size $512$, the runtime shares original and packed BF16 weight storage, saving 4.95\,GiB. At batch size $1$, the runtime fuses output-head processing with full-vocabulary sampling and state updates. Decoding is autoregressive, with weights and history on the GPU.
+
+\begin{table}[!htbp]
+\centering\small
+\caption{Runtime configuration of each model on one Hopper 80GB GPU.}
+\label{tab:runtime-configurations}
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{.20\linewidth}>{\raggedright\arraybackslash}p{.23\linewidth}Y@{}}
+\toprule
+Model & History precision & Execution path\\
+\midrule
+EdgeRock-4B & BF16 KV; FP32 GDN state & Custom CUDA Graph engine; fused BF16 kernels; directly indexed state and local rings\\
+\addlinespace[4pt]
+Qwen3.5-4B & BF16 KV; FP32 GDN state & vLLM~\cite{pagedattention} CUDA Graphs; FlashAttention-3~\cite{flashattention3} (batch size $1$), -4~\cite{flashattention4} (batch); FlashInfer~\cite{flashinfer} GDN prefill and fused decode\\
+\addlinespace[4pt]
+Gemma 4 E4B & BF16 KV & vLLM O3; FlashAttention-4; language model only\\
+\addlinespace[4pt]
+MiniCPM5-2B & BF16 KV & vLLM O3; FlashAttention-3\\
+\addlinespace[4pt]
+LFM2.5-2.6B & BF16 KV & vLLM 0.23.0; CUDA Graphs and chunked prefill\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+EdgeRock and LFM test batches 32, 64, 128, 256, 320, 384, and 512; Qwen and MiniCPM test 32 and 64; Gemma tests 64 and 128. Batch denotes submitted requests. EdgeRock maintains the target concurrency; vLLM schedules active requests within its cache budget. Eight continuations share each prompt in the EdgeRock batch grid, then retain independent recurrent, local-attention, and anchor state. The short sweep shares a prompt across up to eight requests.
+
+The vLLM peers use CUDA Graphs, chunked prefill, and a 16K prefill-token budget. Qwen, Gemma, and MiniCPM use asynchronous scheduling. Gemma, MiniCPM, and LFM use 95\% GPU-memory utilization. The synthetic single-request workloads use a 256K execution capacity with unchanged weights and RoPE frequencies. Gemma E4B denotes effective scale; its full checkpoint is approximately 8B parameters. MiniCPM's checkpoint is approximately 2.52B.
+
+\subsection{History and device allocation}
+The local and anchor KV budget is a configuration-derived payload bound. During decoding, the local cache stores 1,023 preceding positions and the decoder supplies the current token. The audited logical tensors in Table~\ref{tab:state-budget} total 121.76\,MiB per sequence, including FP32 recurrence, convolution state, and anchor metadata.
+
+Peak tensor allocation includes weights, history, input/output buffers, graph storage, and temporary workspace. Reserved memory also includes cached allocator blocks. At batch size $512$, shared storage for original and packed BF16 projections eliminates duplicate weights while retaining the full history capacity.
+
+\subsection{Measured throughput and memory}
+Tables~\ref{tab:peer-throughput}--\ref{tab:short-scaling} list the measurements behind Figures~\ref{fig:throughput}--\ref{fig:memory-capacity}.
+
+\PeerThroughputResults
+\BatchScalingResults
+\ShortScalingResults

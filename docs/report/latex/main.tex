@@ -1,0 +1,74 @@
+\documentclass[10pt,a4paper]{article}
+\usepackage[T1]{fontenc}
+\usepackage{newtxtext,newtxmath}
+\usepackage[left=20.5mm,right=20.5mm,top=25mm,bottom=25mm,headheight=24pt,headsep=13pt]{geometry}
+\usepackage{amsmath,mathtools,booktabs,tabularx,array,multirow}
+\usepackage{graphicx,xcolor,hyperref,caption,enumitem,microtype,titlesec,placeins,needspace,fancyhdr}
+\usepackage{algorithm,algpseudocode}
+\definecolor{Blue}{HTML}{2463B4}
+\definecolor{YANblue}{HTML}{2463B4}
+\hypersetup{colorlinks=true,linkcolor=Blue,citecolor=black,urlcolor=Blue,
+ pdftitle={EdgeRock: Strong Reasoning at Constant Memory},
+ pdfauthor={Huishan Ji, Weiming Zhang, Qirui Ye, Jinchao Xu, Yike Guo, Hua Xu}}
+\captionsetup{font=small,labelfont=bf,labelsep=colon,skip=5pt,singlelinecheck=false}
+\captionsetup[table]{position=top}
+\setlength{\parindent}{1em}
+\setlength{\parskip}{2pt}
+\setlength{\emergencystretch}{1.5em}
+\setlength{\textfloatsep}{12pt plus 2pt minus 2pt}
+\setlength{\intextsep}{10pt plus 2pt minus 2pt}
+\setlength{\floatsep}{10pt plus 2pt minus 2pt}
+\renewcommand{\topfraction}{.9}
+\renewcommand{\bottomfraction}{.8}
+\renewcommand{\textfraction}{.08}
+\renewcommand{\floatpagefraction}{.75}
+\setcounter{topnumber}{3}
+\setcounter{bottomnumber}{2}
+\setcounter{totalnumber}{5}
+\makeatletter
+\setlength{\@fptop}{0pt}
+\setlength{\@fpsep}{12pt}
+\setlength{\@fpbot}{0pt plus 1fil}
+\makeatother
+\setlist{nosep,leftmargin=1.3em}
+\renewcommand{\arraystretch}{1.12}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\newcolumntype{C}[1]{>{\centering\arraybackslash}p{#1}}
+\widowpenalty=10000
+\clubpenalty=10000
+\titleformat{\section}{\large\bfseries}{\thesection}{.65em}{}
+\titleformat{\subsection}{\normalsize\bfseries}{\thesubsection}{.65em}{}
+\titleformat{\subsubsection}{\normalsize\itshape}{\thesubsubsection}{.65em}{}
+\titlespacing*{\section}{0pt}{12pt plus 2pt minus 2pt}{6pt}
+\titlespacing*{\subsection}{0pt}{9pt plus 2pt minus 2pt}{4pt}
+\titlespacing*{\subsubsection}{0pt}{7pt}{3pt}
+\pagestyle{plain}
+\graphicspath{{../figures/}}
+\newcommand{\sourcehint}[1]{\par\noindent{\footnotesize #1\par}}
+\input{results_tables.tex}
+\input{runtime_results.tex}
+\hyphenation{EdgeRock}
+\begin{document}
+\input{chapters/cover.tex}
+\input{chapters/overview.tex}
+\input{chapters/methods.tex}
+\input{chapters/evaluation.tex}
+\input{chapters/capability.tex}
+\input{chapters/comparison_appendix.tex}
+\input{chapters/retention.tex}
+\input{chapters/retention_appendix.tex}
+\FloatBarrier
+\input{chapters/diagnostics.tex}
+\FloatBarrier
+\input{chapters/systems.tex}
+\FloatBarrier
+\input{chapters/discussion.tex}
+\input{chapters/references.tex}
+\clearpage
+\appendix
+\input{chapters/evaluation_appendix.tex}
+\input{chapters/full_results.tex}
+\input{chapters/runtime_appendix.tex}
+\input{chapters/reference_results.tex}
+\input{chapters/implementation_detail.tex}
+\end{document}

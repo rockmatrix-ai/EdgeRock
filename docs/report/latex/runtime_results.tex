@@ -1,0 +1,67 @@
+% Generated from verified BF16/FP32 receipts by review/b512_longgrid_20261015/update_results.py.
+\newcommand{\EdgeBatchRatio}{4.36}
+\newcommand{\EdgeLFMRatio}{6.34}
+\newcommand{\EdgeLongTPS}{233.7}
+\newcommand{\EdgeLongMemory}{16.02}
+\newcommand{\EdgeSingleRatio}{1.54}
+\newcommand{\EdgeWeightedTPS}{11,038}
+\newcommand{\EdgePerSequenceTPS}{21.6}
+\newcommand{\EdgeBatchMemory}{73.26}
+\newcommand{\EdgeShortTPS}{229.4}
+\newcommand{\EdgeShortMemory}{14.29}
+\newcommand{\EdgeShortBatchTPS}{11,047}
+\newcommand{\PeerThroughputResults}{%
+\begin{table}[!htbp]
+\centering\small
+\caption{Output-token throughput with 32K output on one Hopper 80GB. Only output tokens are counted; elapsed time includes prefill. Columns give input length; cells show output tokens/s (best batch size). Bold marks the highest throughput in each column.}
+\label{tab:peer-throughput}
+\setlength{\tabcolsep}{4pt}
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{.22\linewidth}*{4}{>{\raggedleft\arraybackslash}X}@{}}
+\toprule
+Model & 4K & 8K & 16K & 32K\\
+\midrule
+EdgeRock-4B & \textbf{11,032} (512) & \textbf{10,906} (512) & \textbf{10,874} (512) & \textbf{10,669} (512)\\
+Qwen3.5-4B & 3,103 (64) & 2,853 (64) & 2,472 (64) & 1,889 (64)\\
+Gemma 4 E4B & 3,940 (128) & 3,432 (128) & 2,880 (128) & 2,196 (64)\\
+MiniCPM5-2B & 3,152 (64) & 2,938 (64) & 2,575 (32) & 2,117 (32)\\
+LFM2.5-2.6B & 1,673 (64) & 1,771 (64) & 1,695 (32) & 1,727 (64)\\
+\bottomrule\end{tabularx}\end{table}}
+\newcommand{\BatchScalingResults}{%
+\begin{table}[!htbp]
+\centering\small
+\caption{Weighted decoding and peak GPU memory across 16 input/output pairs (4K--32K) on one Hopper 80GB.}
+\label{tab:batch-scaling}
+\begin{tabularx}{\linewidth}{@{}Yrrrr@{}}
+\toprule
+Batch size & Decode, tokens/s & Per sequence, tokens/s & Allocated, GiB & Reserved, GiB\\
+\midrule
+32 & 3,920 & 122.5 & 19.08 & 19.74\\
+64 & 6,176 & 96.5 & 21.66 & 22.73\\
+128 & 8,251 & 64.5 & 29.74 & 31.32\\
+256 & 10,041 & 39.2 & 45.90 & 50.89\\
+320 & 9,924 & 31.0 & 53.99 & 59.22\\
+384 & 10,723 & 27.9 & 62.06 & 67.38\\
+512 & 11,038 & 21.6 & 73.26 & 77.76\\
+\bottomrule\end{tabularx}\end{table}}
+\newcommand{\ShortScalingResults}{%
+\begin{table}[!htbp]
+\centering\small
+\caption{Decode throughput and peak GPU allocation at 4K input and 2K output on one Hopper 80GB.}
+\label{tab:short-scaling}
+\begin{tabularx}{\linewidth}{@{}Yrrr@{}}
+\toprule
+Batch size & Decode, tokens/s & Per sequence, tokens/s & Allocated, GiB\\
+\midrule
+1 & 229 & 229.4 & 14.29\\
+2 & 356 & 177.9 & 14.29\\
+4 & 670 & 167.5 & 14.29\\
+8 & 1,262 & 157.8 & 14.59\\
+16 & 2,356 & 147.2 & 15.59\\
+32 & 3,905 & 122.0 & 17.59\\
+64 & 6,180 & 96.6 & 21.60\\
+128 & 8,263 & 64.6 & 29.60\\
+256 & 10,018 & 39.1 & 45.62\\
+320 & 9,914 & 31.0 & 53.64\\
+384 & 10,693 & 27.8 & 61.64\\
+512 & 11,047 & 21.6 & 72.71\\
+\bottomrule\end{tabularx}\end{table}}

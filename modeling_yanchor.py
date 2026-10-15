@@ -511,6 +511,16 @@ def _batch_scatter_state_(target: Any, source: Any, target_indices: Tensor, sour
 
 class FixedMemoryLinearAttentionLayer(LinearAttentionLayer):
 
+    def lazy_initialization(self, conv_states=None, recurrent_states=None):
+        if conv_states is not None:
+            super().lazy_initialization(conv_states=conv_states)
+        if recurrent_states is not None:
+            # Convolution and recurrence have independent storage precision.
+            conv_dtype = self.dtype
+            self.dtype = recurrent_states.dtype
+            super().lazy_initialization(recurrent_states=recurrent_states)
+            self.dtype = conv_dtype
+
     @staticmethod
     def _map_batch_state(state: Any, function: Any) -> Any:
         if state is None:

@@ -1,0 +1,77 @@
+\section{Streaming execution and state ownership}
+\label{sec:streaming-execution}
+
+\subsection{State owned by a continuing request}
+
+A continuing request owns recurrent matrices, a local KV ring, committed anchor banks, pending candidates, and progress metadata (Table~\ref{tab:streaming-state}). This state persists across pauses and slot transfers. New anchors become readable after the next block commit.
+
+\begin{table}[!htbp]
+\centering\small
+\caption{Logical state needed to continue one request. Capacities are per RMA module and KV group where applicable.}
+\label{tab:streaming-state}
+\begin{tabularx}{\linewidth}{@{}p{.23\linewidth}YY@{}}
+\toprule
+State & Contents & Maintenance rule\\
+\midrule
+Recurrent state & The GDN history representation & Update fixed-dimensional recurrent matrices.\\
+\addlinespace[3pt]
+Local history & Recent attention KV and the ring position & Retain at most $W=1{,}024$ positions.\\
+\addlinespace[3pt]
+Committed anchor bank & Selected KV records, admission scores, and source positions & Retain at most $K=1{,}024$ records per group.\\
+\addlinespace[3pt]
+Pending candidates & Current-block records, scores, and occupancy & Accumulate up to $C=256$ positions before a commit.\\
+\addlinespace[3pt]
+Progress metadata & Position and block progress, plus association with the active request & Preserve consistent continuation and slot ownership.\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Model weights are shared across requests; history occupies independent slots in shared cache pools. Extending a request reuses its history capacity, while admitting another request allocates an additional slot.
+
+\subsection{Selection invariants and information availability}
+
+Each KV group examines at most 1,280 records at a boundary and retains up to 1,024, preserving the surviving key and value vectors unchanged. Fixed write-time scores and consistent tie ordering maintain the history top-$K$ invariant in Equation~\ref{eq:history-topk}. Query heads share the group's bank and compute independent retrieval weights. Local and memory attention normalize separately; an empty bank returns zero.
+
+\subsection{Continuation, chunking, and request lifecycle}
+
+The portable backend defaults to 1,024-token prefill chunks. Chunking bounds the working set while preserving local, recurrent, and anchor state. RMA commits remain tied to completed candidate blocks, independently of execution chunk boundaries.
+
+Prefix resumption restores every component in Table~\ref{tab:streaming-state}, including unfinished candidates, so their records participate in the next commit.
+
+Native adapters access history in place through GPU request-slot indices. SGLang~\cite{sglang} reset and copy operations initialize reassigned slots and preserve continuing requests.
+
+
+\paragraph{Released positional configuration.}
+RMA uses partial RoPE over 64 of 256 coordinates, base $10^7$, default scaling, and a maximum-position execution setting of 262,144. Multimodal positions use interleaved rotary sections $(11,11,10)$; text supplies the same cumulative token index on all three axes~\cite{yanchorcode,yanchorconfig}.
+
+\Needspace{32\baselineskip}
+\subsection{Forward procedure and causal visibility}
+
+Prefill and decode follow Algorithm~\ref{alg:anchor-update} with the same logical commit boundaries. Queries read the committed bank throughout each 256-token block, while local attention covers recent tokens. A boundary commit makes selected candidates available to the next block.
+
+\begin{algorithm}[!htbp]
+\caption{Causal RMA update in one local-plus-RMA layer}
+\label{alg:anchor-update}
+\small
+\begin{algorithmic}[1]
+\Require Hidden input $h_t$, causal index $t$, rotary coordinates $\mathbf p_t$
+\Require Local state $\mathcal L$, committed anchor bank $\mathcal M$, pending candidates $\mathcal C$
+\Require Window $W=1{,}024$, bank capacity $K=1{,}024$, candidate block size $C=256$
+\State $u_t\gets\mathrm{Norm}_{\mathrm{mem}}(h_t)$
+\State $m_t\gets\mathrm{ReadAndGate}(u_t,\mathbf p_t,\mathcal M)$ \Comment{Committed bank only}
+\State $w_t\gets\mathrm{Writer}(u_t)$; $(k_t,v_t)\gets\mathrm{MemoryKV}(w_t,\mathbf p_t)$
+\State $a_t\gets\mathrm{Admission}(u_t)$ \Comment{Four causal group scores}
+\State $(\ell_t,\mathcal L)\gets\mathrm{LocalAttentionStep}(h_t,\mathbf p_t,\mathcal L;W)$
+\State $z_t\gets h_t+\ell_t+m_t$; $h_t^{\mathrm{out}}\gets z_t+\mathrm{MLP}(\mathrm{Norm}_{\mathrm{ffn}}(z_t))$
+\State Append $(k_t,v_t,a_t,t)$ to $\mathcal C$
+\If{$|\mathcal C|=C$} \Comment{Logical block boundary, independent of prefill chunks}
+  \For{$g=1,\ldots,4$}
+    \State $\mathcal M_g\gets\operatorname{TopK}_{a_g}(\mathcal M_g\cup\mathcal C_g;K)$
+  \EndFor
+  \State $\mathcal C\gets\varnothing$ \Comment{Updated bank is visible to the next block}
+\EndIf
+\State \Return $h_t^{\mathrm{out}},\mathcal L,\mathcal M,\mathcal C$
+\end{algorithmic}
+\end{algorithm}
+
+\texttt{ReadAndGate} combines query projection, committed-bank attention with the null item, the signed gate, and output projection (Section~\ref{sec:memory-algorithm}). \texttt{MemoryKV} applies the writer's key and value projections, key normalization, and rotary encoding. Local attention includes the current token and retains at most $W=1{,}024$ positions. Top-$K$ ties favor earlier source positions. A new sequence starts with empty local state, anchor banks, and candidate buffers; unfinished candidate blocks persist across prefill chunks and request pauses.

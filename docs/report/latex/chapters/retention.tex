@@ -1,0 +1,9 @@
+\subsection{Retaining source-model reasoning}
+\label{sec:preservation}
+\label{sec:source-retention}
+EdgeRock-4B starts from Qwen3.5-4B's pretrained weights, so this comparison is the closest controlled measure of what constant memory costs. The cost is small: EdgeRock-4B retains \textbf{96.3\%} of Qwen3.5-4B's equal-weight AIME 2024--2026 mean pass@1 after replacing full attention with local attention and a fixed-size anchor bank. It also reaches \textbf{97.5\%} on MATH-500 (Table~\ref{tab:core-reasoning}).
+
+\CoreReasoningResults
+
+\Needspace{6\baselineskip}
+EdgeRock-4B exceeds Qwen3.5-4B on eight of 29 text benchmarks, including MMLU, MMLU-Pro, MMLU-Redux, SuperGPQA, HumanEval, and MBPP (Figure~\ref{fig:delta}).

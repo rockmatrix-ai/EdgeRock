@@ -24,7 +24,7 @@ class Engine:
     def __init__(self, model=ROOT, batch=1, profile='fast', backend='auto', device=None, dtype=None):
         import importlib.util
         import torch
-        from transformers import AutoModelForCausalLM, AutoTokenizer
+        from transformers import AutoTokenizer
         self.torch = torch
         self.batch = batch
         self.device = torch.device(device or ('cuda' if torch.cuda.is_available() else 'mps' if torch.backends.mps.is_available() else 'cpu'))
@@ -36,11 +36,15 @@ class Engine:
         dtype = getattr(torch, dtype) if isinstance(dtype, str) else dtype
         dtype = dtype or (torch.bfloat16 if self.device.type == 'cuda' and torch.cuda.is_bf16_supported() else torch.float32)
         self.tokenizer = AutoTokenizer.from_pretrained(model, trust_remote_code=True, local_files_only=True)
+        if self.tokenizer.chat_template is None:
+            self.tokenizer.chat_template = (ROOT/'runtime/chat_template.jinja').read_text()
         self.tokenizer.padding_side = 'left'
         if self.tokenizer.pad_token_id is None:
             self.tokenizer.pad_token_id = 248044
         start = time.perf_counter()
         if backend == 'cuda':
+            if dtype != torch.bfloat16:
+                raise ValueError('The optimized CUDA backend requires BF16 weights; use --backend torch for other dtypes.')
             import os
             os.environ.setdefault('FLA_TILELANG', '1')
             os.environ.setdefault('FLA_CONFIG_DIR', str(ROOT/'runtime/fla_h100'))
@@ -52,11 +56,24 @@ class Engine:
                 local_files_only=True, attn_implementation='flash_attention_2').to(self.device).eval().requires_grad_(False)
             self.model.config.fixed_memory_swa_reproducible_decode = profile == 'reference'
             self.model.config.fixed_memory_swa_shared_ring_storage = batch > 1
-            self.operators = install_inference(self.model, fp16_state=batch > 1 and profile == 'fast',
-                int8_mlp_b1=batch == 1 and profile == 'fast')
+            self.operators = install_inference(self.model, fp16_state=False, int8_mlp_b1=False)
+            from model.inference_kernels import cuda_graph_generate_top20_dynamic_refill
+            self.benchmark_generate = cuda_graph_generate_top20_dynamic_refill
+            if profile == 'fast':
+                from optimizations.b1_bf16_selected import install as install_selected
+                single_generate = install_selected(self.model)
+                if batch == 1:
+                    self.benchmark_generate = single_generate
+                if batch >= 512:
+                    from optimizations.b512_share_bf16_weights import install as share_weights
+                    sharing = share_weights(self.model)
+                    self.operators['shared_bf16_weight_bytes'] = sharing['saved_bytes']
+                    self.operators['bitwise_weight_checks'] = sharing['bitwise_weight_checks']
+                self.operators['selected_bf16_fusions'] = True
         else:
-            self.model = AutoModelForCausalLM.from_pretrained(model, trust_remote_code=True,
-                local_files_only=True, dtype=dtype, backend='torch', attn_implementation='eager').to(self.device).eval().requires_grad_(False)
+            from model.fixed_memory import load_model
+            self.model = load_model(model, backend='torch', torch_dtype=dtype,
+                local_files_only=True, attn_implementation='eager').to(self.device).eval().requires_grad_(False)
             self.operators = dict(backend='torch', dtype=str(dtype), recurrent_state='float32')
         self.operators['gdn_norm_classes'] = sorted({type(m.norm).__module__ + '.' + type(m.norm).__name__
             for m in self.model.modules() if hasattr(m, 'recurrent_gated_delta_rule')})
@@ -315,7 +332,7 @@ class Stream:
         content = ids[:-1] if ids and ids[-1] in (248046, 248044) else ids
         response = self.engine.tokenizer.decode(content, skip_special_tokens=False, clean_up_tokenization_spaces=False)
         output = {k:v for k,v in entry.items() if k not in {'input_ids','vision_inputs'}}
-        output.update(checkpoint_id='YANchor-4B', protocol_key='main', response=response,
+        output.update(checkpoint_id='EdgeRock-4B', protocol_key='main', response=response,
             response_ids=ids, generated_tokens=len(ids), prompt_tokens=len(entry['input_ids']),
             finish_reason=reason, finished_by_eos=reason=='eos', cap_hit=reason in {'length','prompt_length_cap'})
         self.completed_attempts += 1

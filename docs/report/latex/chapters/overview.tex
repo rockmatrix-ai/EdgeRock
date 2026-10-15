@@ -1,0 +1,40 @@
+\section{Introduction}
+\label{sec:thesis}
+
+Long reasoning turns memory into the deployment bottleneck. Under full attention~\cite{transformer}, every generated token adds to the key--value (KV) cache, so a model that reasons for 100K tokens must also store 100K tokens of history. We call such models \emph{growing-history} models. In data centers, their caches consume limited high-bandwidth memory (HBM), cutting the number of requests each accelerator can serve and raising serving costs~\cite{pagedattention}. On edge devices, reasoning must share memory with perception and other application workloads~\cite{edge_llm}.
+
+For many deployments, a smaller cache is not enough: the cache must be fixed. Robots and vehicles reserve memory for perception, planning, and control; dedicated chips allocate on-chip capacity at design time; serving systems provision for concurrent requests. A growing cache forces a choice between reserving space for the longest possible trace and cutting reasoning short when memory runs out. A fixed history budget makes that allocation predictable: the same memory serves a sequence at 4K or 256K tokens. What these deployments need is determinism, not only efficiency.
+
+Recent architectures shrink this cache aggressively: multi-head latent attention compresses each cached token~\cite{deepseekv2}; hybrids such as Qwen3-Next, Qwen3.5, and Kimi Linear keep full attention in only one layer in four~\cite{qwen3next,qwen35,kimilinear}; DeepSeek Sparse Attention and DeepSeek-V4 read or store fewer entries~\cite{deepseekv32,deepseekv4}; and KV quantization uses fewer bits per entry~\cite{kivi}. Each lowers the cost of a cached token, but the cache still grows with every token the model reads or writes. Shrinking the growth rate moves the memory wall further out; it does not remove it.
+
+\emph{Bounded-state} models already provide this determinism in history storage. Recurrent and state-space models compress history into fixed-size states~\cite{mamba,rwkv7,xlstm}, and sliding-window attention, alone or in recurrent hybrids, keeps only recent tokens~\cite{longformer,recurrentgemma,samba}. None has yet delivered usable reasoning: among the 16 bounded-state models we evaluate, up to 14B parameters, none exceeds 18.8\% on AIME 2024--2026 (Section~\ref{sec:capability}). Inference-time eviction can also cap the cache of a growing-history model by keeping attention sinks, recent tokens, or tokens that drew high attention~\cite{streamingllm,h2o,snapkv}, but the model was never trained to reason with only what remains.
+
+Long reasoning keeps returning to details stated thousands of tokens earlier: a definition, a constraint in the problem statement, an intermediate result. A sliding window forgets such a detail once it scrolls out; a recurrent state keeps only a compressed summary in which individual details blur together~\cite{repeatafterme}. We therefore ask: \emph{can a model keep specific distant details individually retrievable while its memory stays the same size, however long it reasons?}
+
+EdgeRock answers this question with \emph{Rock Memory Anchors} (RMA). Like a rock anchor that pins a structure to bedrock, RMA pins critical details in place. Each \emph{anchor} is a learned key--value record held in a fixed-size \emph{anchor bank}. Recurrent state summarizes the evolving context, local attention covers the most recent 1,024 tokens, and RMA keeps selected distant details directly retrievable. A learned writer turns every token into a candidate record; every 256 tokens, a learned scorer keeps the 1,024 highest-priority records per KV group and discards the rest. Kept records stay separate and unchanged, so any later token can attend to them directly, long after their source has left the window. Together, these components keep everything a sequence must store to continue, its \emph{persistent history}, at 121.76\,MiB, however long the model reasons.
+
+The conversion replaces only the eight full-attention layers of the source model and keeps its recurrent layers and feed-forward blocks, so the recipe is designed to carry over to other backbones that interleave full attention with recurrent or local layers.
+
+
+EdgeRock-4B, our first open release, shows that constant memory and strong reasoning are compatible (Table~\ref{tab:contributions}).
+
+\begin{table}[!htbp]
+\centering\small
+\caption{EdgeRock-4B at a glance.}
+\label{tab:contributions}
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{.16\linewidth}YY@{}}
+\toprule
+Claim & How EdgeRock achieves it & Supporting result\\
+\midrule
+Constant memory & Recurrent state, a 1,024-token window, and RMA's fixed-size anchor banks. & 72\,MiB of attention KV per sequence at any length; 99.1\% below Qwen3.5-4B at 256K context (Section~\ref{sec:complexity}).\\
+\addlinespace[3pt]
+Usable reasoning & Learned writing, admission, and retrieval, trained in stages. & 82.9\% on AIME 2024--2026, versus at most 18.8\% for 16 bounded-state models; within the 82.2--87.8\% range of leading compact models (Section~\ref{sec:capability}).\\
+\addlinespace[3pt]
+RMA is essential & Anchors stay individually retrievable after leaving the window. & Disabling RMA at inference drops long-context query accuracy from 94.1\% to 0.4\% (Section~\ref{sec:diagnostic}).\\
+\addlinespace[3pt]
+Faster serving & Constant history per sequence, CUDA Graphs, and fused BF16 kernels. & 512 concurrent long-generation sequences on one Hopper 80GB GPU; \EdgeBatchRatio{}$\times$ Qwen3.5-4B's throughput on average, up to 5.65$\times$ (Section~\ref{sec:throughput}).\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\FloatBarrier

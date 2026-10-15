@@ -1,5 +1,9 @@
-*
-!Dockerfile
-!requirements.txt
-!wheels/
-!wheels/*.whl
+.git
+.venv
+checkpoints
+outputs
+**/__pycache__
+**/*.pyc
+.DS_Store
+docs
+assets

@@ -115,7 +115,7 @@ class YANchorForCausalLM(Qwen3_5ForCausalLM):
 
     def __init__(self, *, vllm_config, prefix=''):
         if vllm_config.speculative_config or vllm_config.cache_config.enable_prefix_caching:
-            raise NotImplementedError('YANchor currently requires speculative decoding and prefix caching disabled.')
+            raise NotImplementedError('EdgeRock currently requires speculative decoding and prefix caching disabled.')
         config = vllm_config.model_config.hf_text_config
         self._native_decode = [False]
         config.model_type = 'qwen3_5_text'
@@ -158,8 +158,4 @@ class YANchorForCausalLM(Qwen3_5ForCausalLM):
             enable_independent_memory_packed_projections(self)
             enable_native_rmsnorm_inference(self, torch_tree=True)
             enable_framework_rmsnorm_inference(self, GemmaRMSNorm)
-            if os.environ.get('YANCHOR_NATIVE_FAST') == '1':
-                from model.inference_kernels import enable_native_int8_mlp_b1, enable_native_packed_gdn_b1
-                enable_native_int8_mlp_b1(self, self._native_decode)
-                enable_native_packed_gdn_b1(self, self._native_decode)
         return loaded

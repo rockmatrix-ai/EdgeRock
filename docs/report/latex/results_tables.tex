@@ -1,0 +1,486 @@
+\newcommand{\CoreReasoningResults}{%
+\begin{table}[!htbp]
+\centering
+\caption{Competition mathematics and MATH-500 (mean pass@1, \%). Retained gives EdgeRock-4B as a percentage of its source model, Qwen3.5-4B. AIME averages 2024--2026.}
+\label{tab:core-reasoning}
+\small
+\begin{tabularx}{\textwidth}{@{}Y r r r@{}}
+\toprule
+Benchmark & EdgeRock-4B & Qwen3.5-4B~\cite{qwen35} & Retained (\%) \\
+\midrule
+AIME 2024~\cite{aime} & 86.7 & 89.6 & 96.8 \\
+AIME 2025~\cite{aime} & 77.4 & 80.8 & 95.8 \\
+AIME 2026~\cite{aime} & 84.6 & 87.9 & 96.2 \\
+HMMT Feb 2025~\cite{hmmt} & 71.8 & 74.6 & 96.2 \\
+HMMT Nov 2025~\cite{hmmt} & 69.8 & 78.3 & 89.1 \\
+HMMT Feb 2026~\cite{hmmt} & 63.6 & 65.9 & 96.5 \\
+MATH-500~\cite{mathds,math500} & 97.5 & 98.0 & 99.5 \\
+\midrule
+AIME three-year mean & 82.9 & 86.1 & 96.3 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+}
+
+\newcommand{\MathResults}{%
+\begin{table}[!htbp]
+\centering
+\caption{Mathematics among linear-time, constant-state models. MATH denotes MATH-500. Scores are percentages.}
+\label{tab:yanchor-math}
+\fontsize{8.7}{10.8}\selectfont
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.10}
+\begin{tabularx}{\textwidth}{@{}Y r r r r r r r r @{}}
+\toprule
+Model & \shortstack[r]{GSM8K\\\cite{gsm8k}} & \shortstack[r]{MATH\\\cite{math500}} & \shortstack[r]{AIME '24\\\cite{aime}} & \shortstack[r]{AIME '25\\\cite{aime}} & \shortstack[r]{AIME '26\\\cite{aime}} & \shortstack[r]{HMMT\\Feb '25\\\cite{hmmt}} & \shortstack[r]{HMMT\\Nov '25\\\cite{hmmt}} & \shortstack[r]{HMMT\\Feb '26\\\cite{hmmt}} \\
+\midrule
+\textcolor{YANblue}{\textbf{EdgeRock-4B}} & 94.5 & \textbf{97.5} & \textbf{86.7} & \textbf{77.4} & \textbf{84.6} & \textbf{71.8} & \textbf{69.8} & \textbf{63.6} \\
+ARWKV-R1 1.5B~\cite{arwkv} & 24.8 & 13.6 & 0.0 & 0.0 & 0.0 & 0.4 & 0.8 & 1.1 \\
+RWKV-7 G1i 1.5B~\cite{rwkvg1} & 60.3 & 28.2 & 0.0 & 0.4 & 0.4 & 1.7 & 5.0 & 0.0 \\
+RWKV-7 G1j 1.5B~\cite{rwkvg1} & 57.2 & 31.4 & 1.2 & 2.1 & 0.0 & 1.7 & 4.2 & 0.0 \\
+RWKV-7 G1i 2.9B~\cite{rwkvg1} & 71.7 & 43.8 & 1.7 & 1.7 & 2.1 & 1.7 & 5.0 & 0.8 \\
+RWKV-7 G1j 2.9B~\cite{rwkvg1} & 74.1 & 48.2 & 0.4 & 4.6 & 1.7 & 2.1 & 5.0 & 0.4 \\
+AHN-GDN Qwen2.5 3B~\cite{ahn} & 83.8 & 66.2 & 7.1 & 2.1 & 3.3 & 2.9 & 6.7 & 4.9 \\
+ARWKV-R1 7B~\cite{arwkv} & 51.2 & 33.2 & 0.0 & 0.0 & 0.4 & 0.8 & 1.7 & 1.1 \\
+Falcon3-Mamba 7B Instruct~\cite{falcon3} & 61.4 & 41.8 & 1.7 & 0.8 & 1.2 & 0.8 & 5.4 & 2.7 \\
+QRWKV7 7B Instruct~\cite{radlads} & 65.5 & 41.0 & 0.0 & 0.0 & 0.0 & 0.0 & 6.7 & 0.0 \\
+xLSTM 7B~\cite{xlstm7b} & 43.4 & 25.0 & 0.0 & 0.0 & 0.0 & 1.7 & 5.0 & 1.5 \\
+RWKV-7 G1i 7.2B~\cite{rwkvg1} & 85.1 & 68.6 & 8.8 & 11.7 & 7.9 & 2.1 & 5.0 & 3.4 \\
+RWKV-7 G1j 7.2B~\cite{rwkvg1} & 81.8 & 64.2 & 8.3 & 11.2 & 4.6 & 4.2 & 4.2 & 0.8 \\
+RecurrentGemma 9B IT~\cite{recurrentgemma} & 51.7 & 22.8 & 0.4 & 0.8 & 0.0 & 1.2 & 5.4 & 1.9 \\
+RWKV-7 G1j 13.3B~\cite{rwkvg1} & \textbf{94.6} & 77.2 & 17.5 & 27.5 & 11.2 & 3.3 & 5.8 & 12.1 \\
+AHN-GDN Qwen2.5 14B~\cite{ahn} & 93.6 & 80.0 & 13.8 & 10.0 & 10.4 & 7.5 & 10.0 & 4.9 \\
+Phi-3 Medium 4K Instruct~\cite{phi3window} & 85.3 & 49.0 & 3.3 & 3.3 & 0.0 & 6.7 & 2.5 & 3.0 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+}
+
+\newcommand{\TransformerResults}{%
+\begin{table}[!htbp]
+\centering
+\caption{Transformer and full-attention hybrid comparisons. LCB denotes LiveCodeBench.}
+\label{tab:transformers}
+\fontsize{8.7}{10.8}\selectfont
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.10}
+\begin{tabularx}{\textwidth}{@{}Y r r r r r r @{}}
+\toprule
+Model & \shortstack[r]{AIME '24\\\cite{aime}} & \shortstack[r]{AIME '25\\\cite{aime}} & \shortstack[r]{AIME '26\\\cite{aime}} & \shortstack[r]{MMLU-Pro\\\cite{mmlupro}} & \shortstack[r]{LCB v6\\\cite{livecodebench}} & \shortstack[r]{IFEval\\\cite{ifeval}} \\
+\midrule
+\textcolor{YANblue}{\textbf{EdgeRock-4B}} & 86.7 & 77.4 & 84.6 & \textbf{79.8} & 61.6 & 88.0 \\
+Qwen3.5-4B~\cite{qwen35} & \textbf{89.6} & 80.8 & 87.9 & 77.7 & 75.7 & 89.6 \\
+Gemma4-E2B-it~\cite{gemma4} & 38.3 & 33.8 & 33.8 & 47.0 & 59.6 & 82.4 \\
+MiniCPM5-2B~\cite{minicpm5} & 87.5 & 85.4 & 90.4 & 65.3 & 83.3 & 86.3 \\
+Qwen3.5-2B~\cite{qwen35} & 41.2 & 34.2 & 35.4 & 62.8 & 25.0 & 81.5 \\
+Granite4.2-3B~\cite{granite42} & 85.0 & 78.8 & 82.9 & 66.4 & 75.9 & 92.2 \\
+Phi-4-mini-reasoning~\cite{phi4mini} & 45.4 & 32.5 & 38.8 & 38.5 & 35.3 & 45.7 \\
+Gemma4-E4B-it~\cite{gemma4} & 42.1 & 40.0 & 38.3 & 69.0 & 69.1 & 84.3 \\
+Nemotron-3-Nano-4B~\cite{nemotron3nano} & 60.8 & 56.7 & 53.8 & 56.8 & 66.4 & 89.5 \\
+Granite4.2-8B~\cite{granite42} & 88.3 & \textbf{87.9} & \textbf{91.7} & 72.0 & \textbf{85.6} & \textbf{94.6} \\
+MiniCPM4.1-8B~\cite{minicpm41} & 77.1 & 70.0 & 70.8 & 67.0 & 70.4 & 73.4 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+}
+
+\newcommand{\BoundedMathResults}{%
+\begin{table}[!htbp]
+\centering
+\caption{Bounded-state mathematics scores (\%). MATH: MATH-500.}
+\label{tab:all-math}
+\fontsize{8.7}{10.8}\selectfont
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.12}
+\begin{tabularx}{\textwidth}{@{}Y r r r r r r r r @{}}
+\toprule
+Model & \shortstack[r]{GSM8K\\\cite{gsm8k}} & \shortstack[r]{MATH\\\cite{math500}} & \shortstack[r]{AIME '24\\\cite{aime}} & \shortstack[r]{AIME '25\\\cite{aime}} & \shortstack[r]{AIME '26\\\cite{aime}} & \shortstack[r]{HMMT\\Feb '25\\\cite{hmmt}} & \shortstack[r]{HMMT\\Nov '25\\\cite{hmmt}} & \shortstack[r]{HMMT\\Feb '26\\\cite{hmmt}} \\
+\midrule
+\textcolor{YANblue}{\textbf{EdgeRock-4B}} & 94.5 & \textbf{97.5} & \textbf{86.7} & \textbf{77.4} & \textbf{84.6} & \textbf{71.8} & \textbf{69.8} & \textbf{63.6} \\
+ARWKV-R1 1.5B~\cite{arwkv} & 24.8 & 13.6 & 0.0 & 0.0 & 0.0 & 0.4 & 0.8 & 1.1 \\
+RWKV-7 G1i 1.5B~\cite{rwkvg1} & 60.3 & 28.2 & 0.0 & 0.4 & 0.4 & 1.7 & 5.0 & 0.0 \\
+RWKV-7 G1j 1.5B~\cite{rwkvg1} & 57.2 & 31.4 & 1.2 & 2.1 & 0.0 & 1.7 & 4.2 & 0.0 \\
+RWKV-7 G1i 2.9B~\cite{rwkvg1} & 71.7 & 43.8 & 1.7 & 1.7 & 2.1 & 1.7 & 5.0 & 0.8 \\
+RWKV-7 G1j 2.9B~\cite{rwkvg1} & 74.1 & 48.2 & 0.4 & 4.6 & 1.7 & 2.1 & 5.0 & 0.4 \\
+AHN-GDN Qwen2.5 3B~\cite{ahn} & 83.8 & 66.2 & 7.1 & 2.1 & 3.3 & 2.9 & 6.7 & 4.9 \\
+ARWKV-R1 7B~\cite{arwkv} & 51.2 & 33.2 & 0.0 & 0.0 & 0.4 & 0.8 & 1.7 & 1.1 \\
+Falcon3-Mamba 7B Instruct~\cite{falcon3} & 61.4 & 41.8 & 1.7 & 0.8 & 1.2 & 0.8 & 5.4 & 2.7 \\
+QRWKV7 7B Instruct~\cite{radlads} & 65.5 & 41.0 & 0.0 & 0.0 & 0.0 & 0.0 & 6.7 & 0.0 \\
+xLSTM 7B~\cite{xlstm7b} & 43.4 & 25.0 & 0.0 & 0.0 & 0.0 & 1.7 & 5.0 & 1.5 \\
+RWKV-7 G1i 7.2B~\cite{rwkvg1} & 85.1 & 68.6 & 8.8 & 11.7 & 7.9 & 2.1 & 5.0 & 3.4 \\
+RWKV-7 G1j 7.2B~\cite{rwkvg1} & 81.8 & 64.2 & 8.3 & 11.2 & 4.6 & 4.2 & 4.2 & 0.8 \\
+RecurrentGemma 9B IT~\cite{recurrentgemma} & 51.7 & 22.8 & 0.4 & 0.8 & 0.0 & 1.2 & 5.4 & 1.9 \\
+RWKV-7 G1j 13.3B~\cite{rwkvg1} & \textbf{94.6} & 77.2 & 17.5 & 27.5 & 11.2 & 3.3 & 5.8 & 12.1 \\
+AHN-GDN Qwen2.5 14B~\cite{ahn} & 93.6 & 80.0 & 13.8 & 10.0 & 10.4 & 7.5 & 10.0 & 4.9 \\
+Phi-3 Medium 4K Instruct~\cite{phi3window} & 85.3 & 49.0 & 3.3 & 3.3 & 0.0 & 6.7 & 2.5 & 3.0 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+}
+
+\newcommand{\GrowingMathResults}{%
+\begin{table}[!htbp]
+\centering
+\caption{Growing-history mathematics scores (\%). MATH: MATH-500.}
+\label{tab:growing-math}
+\fontsize{8.7}{10.8}\selectfont
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.12}
+\begin{tabularx}{\textwidth}{@{}Y r r r r r r r r @{}}
+\toprule
+Model & \shortstack[r]{GSM8K\\\cite{gsm8k}} & \shortstack[r]{MATH\\\cite{math500}} & \shortstack[r]{AIME '24\\\cite{aime}} & \shortstack[r]{AIME '25\\\cite{aime}} & \shortstack[r]{AIME '26\\\cite{aime}} & \shortstack[r]{HMMT\\Feb '25\\\cite{hmmt}} & \shortstack[r]{HMMT\\Nov '25\\\cite{hmmt}} & \shortstack[r]{HMMT\\Feb '26\\\cite{hmmt}} \\
+\midrule
+Qwen3.5-4B~\cite{qwen35} & \textbf{94.8} & \textbf{98.0} & \textbf{89.6} & 80.8 & 87.9 & 74.6 & 78.3 & 65.9 \\
+Gemma4-E2B-it~\cite{gemma4} & 90.1 & 78.8 & 38.3 & 33.8 & 33.8 & 21.7 & 17.5 & 20.1 \\
+MiniCPM5-2B~\cite{minicpm5} & 93.6 & 97.0 & 87.5 & 85.4 & 90.4 & 76.7 & 74.6 & 63.3 \\
+LFM2.5-2.6B~\cite{lfm25config} & 91.0 & 92.7 & 63.4 & 56.3 & 48.9 & 34.7 & 42.9 & 32.9 \\
+Qwen3.5-2B~\cite{qwen35} & 87.6 & 86.8 & 41.2 & 34.2 & 35.4 & 26.2 & 23.3 & 25.4 \\
+Granite4.2-3B~\cite{granite42} & 93.8 & 97.8 & 85.0 & 78.8 & 82.9 & 75.8 & 72.5 & 59.5 \\
+Phi-4-mini-reasoning~\cite{phi4mini} & 93.6 & 91.6 & 45.4 & 32.5 & 38.8 & 25.0 & 28.7 & 24.6 \\
+Gemma4-E4B-it~\cite{gemma4} & 91.3 & 88.2 & 42.1 & 40.0 & 38.3 & 25.4 & 32.9 & 28.8 \\
+Nemotron-3-Nano-4B~\cite{nemotron3nano} & 92.4 & 94.8 & 60.8 & 56.7 & 53.8 & 40.0 & 47.1 & 36.4 \\
+Granite4.2-8B~\cite{granite42} & 94.4 & \textbf{98.0} & 88.3 & \textbf{87.9} & \textbf{91.7} & \textbf{81.7} & \textbf{86.7} & \textbf{73.9} \\
+MiniCPM4.1-8B~\cite{minicpm41} & 93.6 & 96.4 & 77.1 & 70.0 & 70.8 & 58.3 & 59.6 & 49.2 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+}
+
+\newcommand{\BoundedKnowledgeResults}{%
+\begin{table}[!htbp]
+\centering
+\caption{Bounded-state knowledge and science scores. Pro and Redux denote MMLU-Pro and MMLU-Redux; GPQA denotes GPQA-Diamond; Super denotes SuperGPQA.}
+\label{tab:knowledge}
+\fontsize{8.7}{10.8}\selectfont
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.12}
+\begin{tabularx}{\textwidth}{@{}Y r r r r r r r @{}}
+\toprule
+Model & \shortstack[r]{MMLU\\\cite{mmlu}} & \shortstack[r]{Pro\\\cite{mmlupro}} & \shortstack[r]{Redux\\\cite{mmluredux}} & \shortstack[r]{CMMLU\\\cite{cmmlu}} & \shortstack[r]{C-Eval\\\cite{ceval}} & \shortstack[r]{GPQA\\\cite{gpqa}} & \shortstack[r]{Super\\\cite{supergpqa}} \\
+\midrule
+\textcolor{YANblue}{\textbf{EdgeRock-4B}} & \textbf{88.2} & \textbf{79.8} & \textbf{92.0} & 73.3 & \textbf{74.6} & \textbf{64.6} & \textbf{60.0} \\
+ARWKV-R1 1.5B~\cite{arwkv} & 17.4 & 7.5 & 17.9 & 15.6 & 15.2 & 13.1 & 5.8 \\
+RWKV-7 G1i 1.5B~\cite{rwkvg1} & 49.7 & 13.3 & 55.4 & 33.6 & 33.0 & 26.8 & 17.7 \\
+RWKV-7 G1j 1.5B~\cite{rwkvg1} & 49.3 & 16.6 & 53.8 & 35.3 & 33.3 & 26.3 & 16.1 \\
+RWKV-7 G1i 2.9B~\cite{rwkvg1} & 63.6 & 37.8 & 63.4 & 36.1 & 32.5 & 26.8 & 21.6 \\
+RWKV-7 G1j 2.9B~\cite{rwkvg1} & 64.7 & 37.9 & 58.9 & 37.9 & 36.5 & 31.8 & 21.8 \\
+AHN-GDN Qwen2.5 3B~\cite{ahn} & 62.7 & 42.8 & 65.7 & 62.4 & 62.9 & 31.3 & 23.0 \\
+ARWKV-R1 7B~\cite{arwkv} & 32.3 & 8.8 & 35.2 & 29.0 & 29.0 & 13.1 & 8.8 \\
+Falcon3-Mamba 7B Instruct~\cite{falcon3} & 57.7 & 26.1 & 64.8 & 33.4 & 35.2 & 20.7 & 12.2 \\
+QRWKV7 7B Instruct~\cite{radlads} & 64.6 & 23.0 & 34.1 & 57.7 & 56.0 & 8.6 & 15.4 \\
+xLSTM 7B~\cite{xlstm7b} & 19.6 & 4.6 & 37.9 & 16.9 & 19.5 & 12.1 & 5.3 \\
+RWKV-7 G1i 7.2B~\cite{rwkvg1} & 69.4 & 44.9 & 73.5 & 49.8 & 51.6 & 30.3 & 25.7 \\
+RWKV-7 G1j 7.2B~\cite{rwkvg1} & 67.5 & 46.2 & 72.7 & 50.8 & 48.9 & 36.9 & 25.3 \\
+RecurrentGemma 9B IT~\cite{recurrentgemma} & 55.5 & 13.4 & 55.0 & 43.4 & 41.7 & 24.7 & 19.5 \\
+RWKV-7 G1j 13.3B~\cite{rwkvg1} & 76.7 & 47.6 & 81.8 & 67.4 & 66.3 & 42.4 & 31.8 \\
+AHN-GDN Qwen2.5 14B~\cite{ahn} & 77.2 & 63.5 & 83.5 & \textbf{75.0} & 74.2 & 40.9 & 35.5 \\
+Phi-3 Medium 4K Instruct~\cite{phi3window} & 76.3 & 54.0 & 81.4 & 53.3 & 51.3 & 26.8 & 25.6 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+}
+
+\newcommand{\GrowingKnowledgeResults}{%
+\begin{table}[!htbp]
+\centering
+\caption{Growing-history knowledge and science scores. Pro and Redux denote MMLU-Pro and MMLU-Redux; GPQA denotes GPQA-Diamond; Super denotes SuperGPQA.}
+\label{tab:growing-knowledge}
+\fontsize{8.7}{10.8}\selectfont
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.12}
+\begin{tabularx}{\textwidth}{@{}Y r r r r r r r @{}}
+\toprule
+Model & \shortstack[r]{MMLU\\\cite{mmlu}} & \shortstack[r]{Pro\\\cite{mmlupro}} & \shortstack[r]{Redux\\\cite{mmluredux}} & \shortstack[r]{CMMLU\\\cite{cmmlu}} & \shortstack[r]{C-Eval\\\cite{ceval}} & \shortstack[r]{GPQA\\\cite{gpqa}} & \shortstack[r]{Super\\\cite{supergpqa}} \\
+\midrule
+Qwen3.5-4B~\cite{qwen35} & \textbf{85.2} & \textbf{77.7} & \textbf{89.8} & \textbf{83.9} & \textbf{84.0} & \textbf{77.3} & \textbf{52.8} \\
+Gemma4-E2B-it~\cite{gemma4} & 72.2 & 47.0 & 78.2 & 60.2 & 61.2 & 46.5 & 34.1 \\
+MiniCPM5-2B~\cite{minicpm5} & 79.6 & 65.3 & 85.3 & 79.2 & 78.3 & 67.7 & 40.9 \\
+LFM2.5-2.6B~\cite{lfm25config} & 75.3 & 59.9 & 81.7 & 57.2 & 59.5 & 58.2 & 27.1 \\
+Qwen3.5-2B~\cite{qwen35} & 72.5 & 62.8 & 79.5 & 68.2 & 68.7 & 54.5 & 39.3 \\
+Granite4.2-3B~\cite{granite42} & 77.2 & 66.4 & 81.6 & 59.1 & 60.8 & 58.6 & 39.5 \\
+Phi-4-mini-reasoning~\cite{phi4mini} & 77.5 & 38.5 & 78.3 & 45.3 & 42.4 & 48.0 & 32.2 \\
+Gemma4-E4B-it~\cite{gemma4} & 81.2 & 69.0 & 86.4 & 68.7 & 68.6 & 55.6 & 41.1 \\
+Nemotron-3-Nano-4B~\cite{nemotron3nano} & 75.8 & 56.8 & 81.5 & 54.6 & 56.4 & 43.4 & 37.4 \\
+Granite4.2-8B~\cite{granite42} & 78.6 & 72.0 & 86.3 & 55.1 & 58.4 & 61.6 & 45.7 \\
+MiniCPM4.1-8B~\cite{minicpm41} & 82.7 & 67.0 & 87.8 & 80.2 & 79.0 & 51.5 & 40.6 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+}
+
+\newcommand{\BoundedReasoningResults}{%
+\begin{table}[!htbp]
+\centering
+\caption{Bounded-state commonsense and reasoning scores. Wino. denotes WinoGrande; Hella. denotes HellaSwag.}
+\label{tab:reasoning}
+\fontsize{9.3}{11.5}\selectfont
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.12}
+\begin{tabularx}{\textwidth}{@{}Y r r r r r r @{}}
+\toprule
+Model & \shortstack[r]{Wino.\\\cite{winogrande}} & \shortstack[r]{Hella.\\\cite{hellaswag}} & \shortstack[r]{ARC-C\\\cite{arc}} & \shortstack[r]{ARC-E\\\cite{arc}} & \shortstack[r]{BBH\\\cite{bbh}} & \shortstack[r]{BBEH\\\cite{bbeh}} \\
+\midrule
+\textcolor{YANblue}{\textbf{EdgeRock-4B}} & 77.9 & 64.9 & \textbf{95.5} & \textbf{98.0} & \textbf{85.4} & \textbf{28.9} \\
+ARWKV-R1 1.5B~\cite{arwkv} & 31.4 & 7.4 & 19.6 & 22.3 & 9.8 & 1.6 \\
+RWKV-7 G1i 1.5B~\cite{rwkvg1} & 46.6 & 33.4 & 68.6 & 83.0 & 27.8 & 4.6 \\
+RWKV-7 G1j 1.5B~\cite{rwkvg1} & 49.3 & 24.6 & 66.2 & 80.8 & 31.4 & 5.0 \\
+RWKV-7 G1i 2.9B~\cite{rwkvg1} & 57.4 & 62.7 & 81.9 & 92.2 & 30.3 & 4.5 \\
+RWKV-7 G1j 2.9B~\cite{rwkvg1} & 58.1 & 65.9 & 83.3 & 91.6 & 39.5 & 6.5 \\
+AHN-GDN Qwen2.5 3B~\cite{ahn} & 61.7 & 52.3 & 76.6 & 86.1 & 39.5 & 4.6 \\
+ARWKV-R1 7B~\cite{arwkv} & 34.4 & 10.0 & 47.4 & 56.8 & 16.6 & 2.4 \\
+Falcon3-Mamba 7B Instruct~\cite{falcon3} & 57.5 & 38.6 & 74.8 & 87.6 & 32.8 & 3.4 \\
+QRWKV7 7B Instruct~\cite{radlads} & 61.8 & 48.0 & 86.3 & 95.4 & 37.4 & 1.9 \\
+xLSTM 7B~\cite{xlstm7b} & 28.3 & 7.9 & 25.1 & 28.2 & 12.8 & 3.3 \\
+RWKV-7 G1i 7.2B~\cite{rwkvg1} & 60.4 & 70.2 & 84.5 & 94.5 & 38.8 & 7.0 \\
+RWKV-7 G1j 7.2B~\cite{rwkvg1} & 59.4 & 71.7 & 83.7 & 94.5 & 41.4 & 7.7 \\
+RecurrentGemma 9B IT~\cite{recurrentgemma} & 56.4 & 45.8 & 73.3 & 87.2 & 35.5 & 3.2 \\
+RWKV-7 G1j 13.3B~\cite{rwkvg1} & 72.1 & \textbf{77.4} & 91.8 & 96.3 & 48.7 & 7.7 \\
+AHN-GDN Qwen2.5 14B~\cite{ahn} & 74.0 & 67.9 & 91.5 & 94.0 & 52.0 & 5.3 \\
+Phi-3 Medium 4K Instruct~\cite{phi3window} & \textbf{79.6} & 74.0 & 89.8 & 95.3 & 53.3 & 3.1 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+}
+
+\newcommand{\GrowingReasoningResults}{%
+\begin{table}[!htbp]
+\centering
+\caption{Growing-history commonsense and reasoning scores. Wino. denotes WinoGrande; Hella. denotes HellaSwag.}
+\label{tab:growing-reasoning}
+\fontsize{9.3}{11.5}\selectfont
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.12}
+\begin{tabularx}{\textwidth}{@{}Y r r r r r r @{}}
+\toprule
+Model & \shortstack[r]{Wino.\\\cite{winogrande}} & \shortstack[r]{Hella.\\\cite{hellaswag}} & \shortstack[r]{ARC-C\\\cite{arc}} & \shortstack[r]{ARC-E\\\cite{arc}} & \shortstack[r]{BBH\\\cite{bbh}} & \shortstack[r]{BBEH\\\cite{bbeh}} \\
+\midrule
+Qwen3.5-4B~\cite{qwen35} & \textbf{87.1} & \textbf{80.6} & \textbf{96.8} & \textbf{98.4} & 86.2 & \textbf{34.6} \\
+Gemma4-E2B-it~\cite{gemma4} & 63.2 & 50.9 & 89.2 & 94.8 & 80.3 & 11.6 \\
+MiniCPM5-2B~\cite{minicpm5} & 69.8 & 52.2 & 91.9 & 97.0 & 82.1 & 25.4 \\
+LFM2.5-2.6B~\cite{lfm25config} & 67.9 & 40.7 & 91.6 & 96.5 & 76.7 & 13.1 \\
+Qwen3.5-2B~\cite{qwen35} & 71.5 & 59.3 & 91.4 & 95.5 & 79.1 & 14.9 \\
+Granite4.2-3B~\cite{granite42} & 74.0 & 67.4 & 92.4 & 97.1 & 85.5 & 24.5 \\
+Phi-4-mini-reasoning~\cite{phi4mini} & 75.8 & 62.6 & 90.2 & 94.4 & 72.5 & 12.9 \\
+Gemma4-E4B-it~\cite{gemma4} & 76.5 & 53.5 & 94.3 & 97.7 & 84.1 & 17.4 \\
+Nemotron-3-Nano-4B~\cite{nemotron3nano} & 65.6 & 46.3 & 91.9 & 96.7 & 79.3 & 10.8 \\
+Granite4.2-8B~\cite{granite42} & 76.2 & 63.1 & 90.9 & 94.6 & \textbf{88.9} & 31.5 \\
+MiniCPM4.1-8B~\cite{minicpm41} & 78.2 & 49.8 & 93.4 & 97.4 & 86.6 & 14.0 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+}
+
+\newcommand{\BoundedCodeInstructionResults}{%
+\begin{table}[!htbp]
+\centering
+\caption{Bounded-state coding and instruction following. LCB denotes LiveCodeBench.}
+\label{tab:code-instruction}
+\fontsize{9.3}{11.5}\selectfont
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.12}
+\begin{tabularx}{\textwidth}{@{}Y r r r r r @{}}
+\toprule
+Model & \shortstack[r]{HumanEval\\\cite{humaneval}} & \shortstack[r]{MBPP\\\cite{mbpp}} & \shortstack[r]{LCB v6\\\cite{livecodebench}} & \shortstack[r]{IFEval\\\cite{ifeval}} & \shortstack[r]{IFBench\\\cite{ifbench}} \\
+\midrule
+\textcolor{YANblue}{\textbf{EdgeRock-4B}} & \textbf{96.7} & \textbf{87.8} & \textbf{61.6} & \textbf{88.0} & \textbf{65.3} \\
+ARWKV-R1 1.5B~\cite{arwkv} & 4.3 & 5.4 & 0.3 & 11.1 & 8.3 \\
+RWKV-7 G1i 1.5B~\cite{rwkvg1} & 42.1 & 36.6 & 7.2 & 37.0 & 14.7 \\
+RWKV-7 G1j 1.5B~\cite{rwkvg1} & 41.5 & 38.6 & 6.3 & 46.2 & 16.0 \\
+RWKV-7 G1i 2.9B~\cite{rwkvg1} & 58.5 & 49.2 & 11.6 & 43.1 & 17.0 \\
+RWKV-7 G1j 2.9B~\cite{rwkvg1} & 58.5 & 48.2 & 12.1 & 56.4 & 17.3 \\
+AHN-GDN Qwen2.5 3B~\cite{ahn} & 67.7 & 49.0 & 14.6 & 58.6 & 26.3 \\
+ARWKV-R1 7B~\cite{arwkv} & 16.5 & 21.2 & 2.6 & 10.4 & 8.3 \\
+Falcon3-Mamba 7B Instruct~\cite{falcon3} & 34.1 & 39.2 & 9.3 & 64.7 & 18.7 \\
+QRWKV7 7B Instruct~\cite{radlads} & 62.2 & 30.2 & 12.4 & 59.0 & 21.3 \\
+xLSTM 7B~\cite{xlstm7b} & 36.6 & 9.2 & 2.2 & 34.0 & 14.7 \\
+RWKV-7 G1i 7.2B~\cite{rwkvg1} & 65.2 & 59.0 & 18.8 & 53.4 & 17.7 \\
+RWKV-7 G1j 7.2B~\cite{rwkvg1} & 72.6 & 58.0 & 21.3 & 66.5 & 18.3 \\
+RecurrentGemma 9B IT~\cite{recurrentgemma} & 37.2 & 19.0 & 7.9 & 39.7 & 12.7 \\
+RWKV-7 G1j 13.3B~\cite{rwkvg1} & 86.0 & 67.4 & 30.7 & 77.8 & 27.3 \\
+AHN-GDN Qwen2.5 14B~\cite{ahn} & 75.6 & 68.6 & 32.9 & 77.4 & 33.3 \\
+Phi-3 Medium 4K Instruct~\cite{phi3window} & 73.8 & 59.4 & 19.1 & 61.4 & 22.0 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+}
+
+\newcommand{\GrowingCodeInstructionResults}{%
+\begin{table}[!htbp]
+\centering
+\caption{Growing-history coding and instruction following. LCB denotes LiveCodeBench.}
+\label{tab:growing-code-instruction}
+\fontsize{9.3}{11.5}\selectfont
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.12}
+\begin{tabularx}{\textwidth}{@{}Y r r r r r @{}}
+\toprule
+Model & \shortstack[r]{HumanEval\\\cite{humaneval}} & \shortstack[r]{MBPP\\\cite{mbpp}} & \shortstack[r]{LCB v6\\\cite{livecodebench}} & \shortstack[r]{IFEval\\\cite{ifeval}} & \shortstack[r]{IFBench\\\cite{ifbench}} \\
+\midrule
+Qwen3.5-4B~\cite{qwen35} & 86.0 & 71.0 & 75.7 & 89.6 & 60.3 \\
+Gemma4-E2B-it~\cite{gemma4} & 90.9 & 79.6 & 59.6 & 82.4 & 29.0 \\
+MiniCPM5-2B~\cite{minicpm5} & 97.6 & 94.8 & 83.3 & 86.3 & 64.0 \\
+LFM2.5-2.6B~\cite{lfm25config} & 92.9 & 73.6 & 59.7 & 93.3 & 56.2 \\
+Qwen3.5-2B~\cite{qwen35} & 54.9 & 35.4 & 25.0 & 81.5 & 43.7 \\
+Granite4.2-3B~\cite{granite42} & 97.0 & 92.6 & 75.9 & 92.2 & 74.3 \\
+Phi-4-mini-reasoning~\cite{phi4mini} & 79.9 & 64.0 & 35.3 & 45.7 & 14.3 \\
+Gemma4-E4B-it~\cite{gemma4} & 93.9 & 79.2 & 69.1 & 84.3 & 34.7 \\
+Nemotron-3-Nano-4B~\cite{nemotron3nano} & 90.9 & 72.2 & 66.4 & 89.5 & 57.7 \\
+Granite4.2-8B~\cite{granite42} & 96.3 & \textbf{95.4} & \textbf{85.6} & \textbf{94.6} & \textbf{77.0} \\
+MiniCPM4.1-8B~\cite{minicpm41} & \textbf{98.2} & 92.2 & 70.4 & 73.4 & 23.7 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+}
+
+\newcommand{\BackboneResults}{%
+\begin{table}[!htbp]
+\centering
+\caption{Text-capability comparison with Qwen3.5-4B. Scores are percentages.}
+\label{tab:backbone}
+\small
+\begin{tabularx}{\textwidth}{@{}Y r r@{}}
+\toprule
+Benchmark & EdgeRock-4B & Qwen3.5-4B~\cite{qwen35} \\
+\midrule
+GSM8K~\cite{gsm8k} & 94.5 & \textbf{94.8} \\
+MATH-500~\cite{mathds,math500} & 97.5 & \textbf{98.0} \\
+AIME 2024~\cite{aime} & 86.7 & \textbf{89.6} \\
+AIME 2025~\cite{aime} & 77.4 & \textbf{80.8} \\
+AIME 2026~\cite{aime} & 84.6 & \textbf{87.9} \\
+HMMT Feb 2026~\cite{hmmt} & 63.6 & \textbf{65.9} \\
+MMLU~\cite{mmlu} & \textbf{88.2} & 85.2 \\
+MMLU-Pro~\cite{mmlupro} & \textbf{79.8} & 77.7 \\
+MMLU-Redux~\cite{mmluredux} & \textbf{92.0} & 89.8 \\
+CMMLU~\cite{cmmlu} & 73.3 & \textbf{83.9} \\
+C-Eval~\cite{ceval} & 74.6 & \textbf{84.0} \\
+GPQA-Diamond~\cite{gpqa} & 64.6 & \textbf{77.3} \\
+SuperGPQA~\cite{supergpqa} & \textbf{60.0} & 52.8 \\
+WinoGrande~\cite{winogrande} & 77.9 & \textbf{87.1} \\
+HellaSwag~\cite{hellaswag} & 64.9 & \textbf{80.6} \\
+ARC-C~\cite{arc} & 95.5 & \textbf{96.8} \\
+ARC-E~\cite{arc} & 98.0 & \textbf{98.4} \\
+BBH~\cite{bbh} & 85.4 & \textbf{86.2} \\
+BBEH~\cite{bbeh} & 28.9 & \textbf{34.6} \\
+HumanEval~\cite{humaneval} & \textbf{96.7} & 86.0 \\
+MBPP~\cite{mbpp} & \textbf{87.8} & 71.0 \\
+LiveCodeBench v6~\cite{livecodebench} & 61.6 & \textbf{75.7} \\
+IFEval~\cite{ifeval} & 88.0 & \textbf{89.6} \\
+IFBench~\cite{ifbench} & \textbf{65.3} & 60.3 \\
+DROP~\cite{drop} & \textbf{77.2} & 76.0 \\
+MuSR~\cite{musr} & 60.4 & \textbf{64.9} \\
+LogiQA2~\cite{logiqa2} & 72.2 & \textbf{82.2} \\
+HMMT Feb 2025~\cite{hmmt} & 71.8 & \textbf{74.6} \\
+HMMT Nov 2025~\cite{hmmt} & 69.8 & \textbf{78.3} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+}
+
+\newcommand{\BoundedAdditionalResults}{%
+\begin{table}[!htbp]
+\centering
+\caption{Bounded-state reading and multi-step reasoning. DROP: F1; MuSR: task-macro accuracy; LogiQA2: accuracy.}
+\label{tab:additional}
+\fontsize{9.3}{11.5}\selectfont
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.12}
+\begin{tabularx}{\textwidth}{@{}Y r r r @{}}
+\toprule
+Model & \shortstack[r]{DROP F1\\\cite{drop}} & \shortstack[r]{MuSR\\\cite{musr}} & \shortstack[r]{LogiQA2\\\cite{logiqa2}} \\
+\midrule
+\textcolor{YANblue}{\textbf{EdgeRock-4B}} & \textbf{77.2} & \textbf{60.4} & 72.2 \\
+ARWKV-R1 1.5B~\cite{arwkv} & 5.6 & 8.6 & 17.5 \\
+RWKV-7 G1i 1.5B~\cite{rwkvg1} & 23.0 & 19.3 & 38.7 \\
+RWKV-7 G1j 1.5B~\cite{rwkvg1} & 24.9 & 29.1 & 36.1 \\
+RWKV-7 G1i 2.9B~\cite{rwkvg1} & 24.6 & 31.9 & 47.6 \\
+RWKV-7 G1j 2.9B~\cite{rwkvg1} & 30.7 & 34.5 & 45.4 \\
+AHN-GDN Qwen2.5 3B~\cite{ahn} & 32.8 & 37.8 & 50.1 \\
+ARWKV-R1 7B~\cite{arwkv} & 11.1 & 15.4 & 26.8 \\
+Falcon3-Mamba 7B Instruct~\cite{falcon3} & 19.9 & 29.1 & 41.4 \\
+QRWKV7 7B Instruct~\cite{radlads} & 21.2 & 2.6 & 33.2 \\
+xLSTM 7B~\cite{xlstm7b} & 29.0 & 19.3 & 20.0 \\
+RWKV-7 G1i 7.2B~\cite{rwkvg1} & 33.3 & 49.6 & 53.1 \\
+RWKV-7 G1j 7.2B~\cite{rwkvg1} & 34.2 & 48.6 & 56.4 \\
+RecurrentGemma 9B IT~\cite{recurrentgemma} & 37.1 & 35.2 & 40.2 \\
+RWKV-7 G1j 13.3B~\cite{rwkvg1} & 51.5 & 51.4 & 66.6 \\
+AHN-GDN Qwen2.5 14B~\cite{ahn} & 66.5 & 56.4 & \textbf{72.3} \\
+Phi-3 Medium 4K Instruct~\cite{phi3window} & 51.5 & 51.1 & 62.7 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+}
+
+\newcommand{\GrowingAdditionalResults}{%
+\begin{table}[!htbp]
+\centering
+\caption{Growing-history reading and multi-step reasoning. DROP: F1; MuSR: task-macro accuracy; LogiQA2: accuracy.}
+\label{tab:growing-additional}
+\fontsize{9.3}{11.5}\selectfont
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.12}
+\begin{tabularx}{\textwidth}{@{}Y r r r @{}}
+\toprule
+Model & \shortstack[r]{DROP F1\\\cite{drop}} & \shortstack[r]{MuSR\\\cite{musr}} & \shortstack[r]{LogiQA2\\\cite{logiqa2}} \\
+\midrule
+Qwen3.5-4B~\cite{qwen35} & 76.0 & 64.9 & \textbf{82.2} \\
+Gemma4-E2B-it~\cite{gemma4} & 72.9 & 58.9 & 59.4 \\
+MiniCPM5-2B~\cite{minicpm5} & 76.0 & \textbf{65.3} & 73.7 \\
+LFM2.5-2.6B~\cite{lfm25config} & 72.3 & 60.4 & 63.2 \\
+Qwen3.5-2B~\cite{qwen35} & 73.7 & 61.3 & 66.3 \\
+Granite4.2-3B~\cite{granite42} & \textbf{83.7} & 65.1 & 69.5 \\
+Phi-4-mini-reasoning~\cite{phi4mini} & 50.6 & 56.7 & 58.5 \\
+Gemma4-E4B-it~\cite{gemma4} & 72.9 & 62.2 & 72.6 \\
+Nemotron-3-Nano-4B~\cite{nemotron3nano} & 72.6 & 58.2 & 67.9 \\
+Granite4.2-8B~\cite{granite42} & 76.9 & 62.4 & 73.8 \\
+MiniCPM4.1-8B~\cite{minicpm41} & 78.3 & 64.5 & 75.7 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+}
+
+\newcommand{\VisionResults}{%
+\begin{table}[!htbp]
+\centering
+\caption{EdgeRock-4B VL capability across six benchmarks. Scores are percentages. The mean weights the six answer-level accuracies equally.}
+\label{tab:vision}
+\small
+\begin{tabularx}{\textwidth}{@{}Y l r@{}}
+\toprule
+Benchmark & Metric & EdgeRock-4B \\
+\midrule
+MMBench EN~\cite{mmbench} & Answer-level accuracy & 88.3 \\
+MMBench CN~\cite{mmbench} & Answer-level accuracy & 89.0 \\
+POPE~\cite{pope} & Answer-level accuracy & 85.4 \\
+MME~\cite{mme} & Answer-level accuracy & 83.0 \\
+ChartQA~\cite{chartqa} & Answer-level accuracy & 83.9 \\
+AI2D~\cite{ai2d} & Answer-level accuracy & 80.0 \\
+\midrule
+Six-benchmark mean & Mean accuracy & 84.9 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+}
+
+\newcommand{\PeerCapabilityResults}{%
+\begin{table}[!htbp]
+\centering\small
+\caption{Compact-model capability (\%). EdgeRock keeps constant persistent history; models below the divider are growing-history models. AIME: 2024--2026 mean. Bold: column maximum.}
+\label{tab:peer-capability}
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.18}
+\begin{tabular*}{\linewidth}{@{\extracolsep{\fill}}lrrrrrr@{}}
+\toprule
+Model & AIME & \shortstack[r]{MMLU\\Pro} & \shortstack[r]{Super\\GPQA} & \shortstack[r]{GPQA\\Diamond} & \shortstack[r]{LCB\\v6} & IFEval\\
+\midrule
+\textcolor{YANblue}{\textbf{EdgeRock-4B}} & 82.9 & \textbf{79.8} & \textbf{60.0} & 64.6 & 61.6 & 88.0 \\
+\midrule
+Qwen3.5-4B~\cite{qwen35} & 86.1 & 77.7 & 52.8 & \textbf{77.3} & 75.7 & 89.6 \\
+Gemma4-E4B-it~\cite{gemma4} & 40.1 & 69.0 & 41.1 & 55.6 & 69.1 & 84.3 \\
+Nemotron-3-Nano-4B~\cite{nemotron3nano} & 57.1 & 56.8 & 37.4 & 43.4 & 66.4 & 89.5 \\
+Phi-4-mini-reasoning~\cite{phi4mini} & 38.9 & 38.5 & 32.2 & 48.0 & 35.3 & 45.7 \\
+MiniCPM5-2B~\cite{minicpm5} & \textbf{87.8} & 65.3 & 40.9 & 67.7 & \textbf{83.3} & 86.3 \\
+LFM2.5-2.6B~\cite{lfm25config} & 56.2 & 59.9 & 27.1 & 58.2 & 59.7 & \textbf{93.3} \\
+\bottomrule
+\end{tabular*}
+\end{table}
+}

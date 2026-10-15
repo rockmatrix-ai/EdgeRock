@@ -1,0 +1,9 @@
+\section{Strong capability at constant memory}
+\label{sec:capability}
+EdgeRock-4B brings bounded-state reasoning to a usable level. It ranks first among 17 bounded-state models on 24 of 29 text benchmarks (Appendix~\ref{sec:full-results}), and its AIME score lies in the range of leading compact growing-history models (Section~\ref{sec:peer-capability}). The bounded-state baselines differ from EdgeRock in training data and post-training as well as in architecture, so this comparison shows where the class stands rather than the cost of constant memory alone. That cost is measured against EdgeRock's own source model, Qwen3.5-4B (Section~\ref{sec:source-retention}).
+
+\subsection{Representative bounded-state architectures}
+\label{sec:bounded-capability}
+EdgeRock-4B leads the evaluated bounded-state class in both the 29-benchmark mean and competition mathematics (Figure~\ref{fig:bounded}). The comparison includes larger GDN, RWKV, and Mamba models~\cite{ahn,rwkvg1,falcon3}. Its equal-weight 29-benchmark mean exceeds AHN-GDN Qwen2.5 14B, the strongest baseline on this aggregate, by \textbf{23.8 percentage points}.
+
+On AIME 2024--2026, EdgeRock-4B reaches an \textbf{82.9\%} mean pass@1, compared with 18.8\% for RWKV-7 G1j 13.3B, the strongest bounded-state AIME comparator (Figure~\ref{fig:bounded}).

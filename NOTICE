@@ -1,5 +1,8 @@
-YANchor-4B
+EdgeRock-4B (formerly YANchor-4B)
 Copyright 2026 the YANchor contributors.
+
+The model is now published as EdgeRock-4B. Checkpoint serialization names
+and the original YANchor Model License 1.0 remain unchanged.
 YANchor model licensor: Rock Matrix (岩芯矩阵).
 
 Based on Qwen3.5-4B, Copyright 2026 Alibaba Cloud, Apache License 2.0.

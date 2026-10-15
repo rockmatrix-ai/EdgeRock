@@ -1,0 +1,26 @@
+\Needspace{17\baselineskip}
+\subsection{Multimodal reasoning and visual understanding}
+\label{sec:vision}
+
+EdgeRock-4B extends its constant-memory design to text-and-image reasoning. Across six visual benchmarks covering perception, chart and diagram understanding, and visual question answering, it reaches an \textbf{84.9\%} equal-weight mean answer-level accuracy, compared with 89.1\% for Qwen3.5-4B, retaining 95.3\% (Table~\ref{tab:visual-results}).
+
+\begin{table}[!htbp]
+\centering
+\caption{Visual answer-level accuracy (\%), including MME. Retained gives EdgeRock-4B as a percentage of Qwen3.5-4B. Appendix~\ref{app:protocol} gives standard MME points.}
+\label{tab:visual-results}
+\begin{tabularx}{\linewidth}{@{}Yrrr@{}}
+\toprule
+Benchmark & EdgeRock-4B & Qwen3.5-4B & Retained (\%)\\
+\midrule
+MMBench EN~\cite{mmbench} & 88.3 & 90.1 & 98.0 \\
+MMBench CN~\cite{mmbench} & 89.0 & 91.4 & 97.4 \\
+POPE~\cite{pope} & 85.4 & 88.8 & 96.2 \\
+MME~\cite{mme} & 83.0 & 86.8 & 95.6 \\
+ChartQA~\cite{chartqa} & 83.9 & 90.3 & 92.9 \\
+AI2D~\cite{ai2d} & 80.0 & 87.0 & 92.0 \\
+\midrule
+Equal-weight mean & 84.9 & 89.1 & 95.3 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+

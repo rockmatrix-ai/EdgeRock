@@ -1,0 +1,43 @@
+{
+  "base_commit": "49e4b0f8fdf0ff508f7570c6b3ef3eada3c8747a",
+  "model_revision": "e10f2b1818813b45ca53a7c98d757f388368cedb",
+  "source": "Frozen implementation used for the October 2026 technical report",
+  "packaging_changes": [
+    "Package-relative imports.",
+    "FP32 cache initialization is implemented directly in FixedMemoryLinearAttentionLayer."
+  ],
+  "components": {
+    "b1_bf16_selected.py": {
+      "report_source_sha256": "82d7484627684ed3c2375a8d0339497399e67cf24ae705cddb45215cfe75f57d",
+      "release_sha256": "c97047180dacd51e8d7ec86856232b00d0edee4755bcb76e7071ec3a6b526259"
+    },
+    "b1_bf16_fusions.py": {
+      "report_source_sha256": "9cd816ae32ee03e312445291dd859ff41b43acee94ee916de1e213db98d11a9b",
+      "release_sha256": "1ed5b969e0a14520d0692eea22aedc37477348328f796357bbee2b7b6c71361b"
+    },
+    "b1_bf16_projection.py": {
+      "report_source_sha256": "dc82eeb0d13058f1e3aea7476f9c49b8bdbaaf733b27fac11078b97465551199",
+      "release_sha256": "dc82eeb0d13058f1e3aea7476f9c49b8bdbaaf733b27fac11078b97465551199"
+    },
+    "b1_runtime_joint_projection.py": {
+      "report_source_sha256": "fba942060f0ceb84cb656e22a2a754c4e54f989617f34f176ab97094abac4876",
+      "release_sha256": "fba942060f0ceb84cb656e22a2a754c4e54f989617f34f176ab97094abac4876"
+    },
+    "b1_bf16_crosslayer.py": {
+      "report_source_sha256": "0ee5c8984460cd2bafcef91223548ba5ee2f41c7ce1246550cad311b94b71efe",
+      "release_sha256": "0ee5c8984460cd2bafcef91223548ba5ee2f41c7ce1246550cad311b94b71efe"
+    },
+    "b1_bf16_swa_prepare.py": {
+      "report_source_sha256": "ac91c6bfdafb59def4a552d13315ca3a69f5f45e4c5be348024a15cbb9b1ab73",
+      "release_sha256": "ac91c6bfdafb59def4a552d13315ca3a69f5f45e4c5be348024a15cbb9b1ab73"
+    },
+    "b1_bf16_output_fusion.py": {
+      "report_source_sha256": "46b5702883b8d60ff824575e1c2af8d46a0f800e8148d89ec0a54087d75e6672",
+      "release_sha256": "46b5702883b8d60ff824575e1c2af8d46a0f800e8148d89ec0a54087d75e6672"
+    },
+    "b512_share_bf16_weights.py": {
+      "report_source_sha256": "02677ef9d025423264c6b4a9bfaf85c82d5675aa74bf07de51d787f0699d9345",
+      "release_sha256": "02677ef9d025423264c6b4a9bfaf85c82d5675aa74bf07de51d787f0699d9345"
+    }
+  }
+}

@@ -1,0 +1,48 @@
+\section{Evaluation and verification protocol}
+\label{app:protocol}
+
+\paragraph{Text evaluation and sampling}
+Text evaluation uses fixed prompts, reference answers, and executable tests across 29 benchmarks.
+
+\begin{table}[!htbp]
+\small
+\begin{tabularx}{\textwidth}{@{}p{4.7cm}X@{}}
+\toprule
+Parameter & EdgeRock-4B text evaluation setting\\
+\midrule
+Independent responses per item & $K_{\mathrm{eval}}=64$ for fewer than 100 questions; $16$ for 100--10,000 questions; $1$ above 10,000 questions\\
+Sampling & Temperature 0.6; top-$p$ 0.95; top-$k$ 20; presence penalty 0\\
+Seed / response cap & 20260923 / 131,072 tokens\\
+Stopping & EOS, token cap, or an exact 128--256-token mechanical loop repeated eight times\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Binary task scores report mean pass@1 with benchmark-prescribed subject or subtask aggregation. Repetition counts vary by model and benchmark. AIME pools responses within each edition and weights the 2024--2026 editions equally.
+
+\paragraph{Task-specific verification and aggregation}
+The verifier extracts a committed answer independently of the reference, preferring the final-answer region and accepting a terminal answer in the reasoning region for semantic scoring. Conflicting or unresolved answers receive no credit. Code scores use relaxed program extraction followed by executable tests. IFEval and IFBench use strict constraint checkers, with language-detector seed 0.
+
+BBH, BBEH and CMMLU retain their subtask or subject macro-averages; MMLU-Redux uses corrected choices. MuSR averages its three task accuracies. DROP reports token F1 and exact match, with F1 contributing to the 29-benchmark mean. LogiQA2 uses accuracy on the supplied English panel. Benchmark means assign equal weight to each benchmark, retaining its designated primary metric.
+
+\paragraph{Visual and long-memory evaluation}
+\begin{table}[!htbp]
+\small
+\begin{tabularx}{\textwidth}{@{}p{3.1cm}X X@{}}
+\toprule
+Parameter & Visual evaluation & Long-memory diagnostics\\
+\midrule
+Generation & $K_{\mathrm{eval}}=1$; thinking enabled & Greedy $K_{\mathrm{eval}}=1$\\
+Arithmetic / batch & Reference / 128 & Reference / 1\\
+Sampling & Temperature 1.0; top-$p$ 0.95; top-$k$ 20; presence penalty 1.5 & Greedy selection\\
+Seed & 20260912 & 2026091707\\
+Response cap & 32,768 tokens & 1,024 tokens\\
+Input extent & 65,536--4,194,304 pixels & Approximately 16K--130,000 tokens\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+The six reported visual benchmarks are AI2D, ChartQA, MMBench EN/CN, MME and POPE; the visual benchmark mean weights them equally. Answer-weighted accuracy, MME category points and MMBench circular accuracy remain separate metrics. EdgeRock scores 1,600.4 MME Perception points, 728.2 Cognition points, and 2,328.7 total points. MMBench EN circular accuracy is 81.6\%; six-benchmark answer-weighted accuracy is 85.5\%.
+
+The memory suite has 256 contexts and 1,024 queries: 64 contexts each for exact retrieval, state-update interpretation, cross-document combination and variable binding, with four queries per context. Query accuracy measures individual answers; complete-context success requires all four answers to be correct. Paired interventions change distant evidence while holding the surrounding structure fixed, testing answers that should change or remain stable; paired accuracy requires \emph{both} answers to be correct. The branch-disabled intervention retains the trained backbone and local window.
+

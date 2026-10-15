@@ -135,9 +135,6 @@ class YANchorForCausalLM(nn.Module):
             from model.inference_kernels import enable_independent_memory_packed_projections, enable_native_rmsnorm_inference
             enable_independent_memory_packed_projections(self)
             enable_native_rmsnorm_inference(self, torch_tree=True)
-            if os.environ.get('YANCHOR_NATIVE_FAST') == '1':
-                from model.inference_kernels import enable_native_int8_mlp_b1
-                enable_native_int8_mlp_b1(self, self._native_decode)
         return loaded
 
 

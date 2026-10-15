@@ -1,60 +1,45 @@
-# Running and evaluating YANchor-4B
+# Running EdgeRock-4B
 
-[Model overview and results](README.md)
+[Model overview](README.md) · [Runtime and measurement protocol](docs/runtime.md) · [Full results](docs/results.md)
 
-Download the complete model bundle from [Hugging Face](https://huggingface.co/rockmatrix-ai/YANchor-4B) or [ModelScope](https://modelscope.ai/models/RocoreMatrix/YANchor-4B). It contains the weights, tokenizer and evaluation inputs. This GitHub repository contains the inference and evaluation code. Run all commands from the bundle root; `--model` defaults to that directory. The bundle supports standard Transformers loading, the optimized H100 runtime, and native serving-framework adapters.
+This repository provides inference and evaluation code. Download the matching checkpoint from [Hugging Face](https://huggingface.co/rockmatrix-ai/EdgeRock). Run the commands below from this repository's root and pass the checkpoint directory with `--model`.
 
-```text
-YANchor-4B/
-├── README.md, USAGE.md, CITATION.cff
-├── assets/         # Figures used by README.md
-├── LICENSE, LICENSE-CODE, NOTICE
-├── run.py, requirements.txt, Dockerfile, pyproject.toml
-├── configuration_yanchor.py, modeling_yanchor.py
-├── vllm_yanchor.py, sglang_models/
-├── wheels/         # Pinned public Transformers dependency
-├── config.json, generation_config.json, tokenizer*.json
-├── model.safetensors.index.json
-├── model-00001-of-00003.safetensors
-├── model-00002-of-00003.safetensors
-├── model-00003-of-00003.safetensors
-├── runtime/        # Model, GPU operators, generation and scoring
-├── vision/         # Visual frontend weights and processor
-└── evaluation_data/           # MANIFEST.json, text, vision, memory and code tests
-```
+## Installation
 
-Use `AutoModelForCausalLM` with `trust_remote_code=True` or `run.py`. Both load the YANchor architecture and its independent memory modules. The unmodified Qwen model class is not a substitute.
-
-## Runtime choices
-
-| Route | Purpose | Verified hardware |
-|---|---|---|
-| Transformers / `--backend torch` | Standard Python generation without custom CUDA extensions | CPU FP32; H100 BF16 |
-| `--backend cuda --profile fast` | Highest-throughput H100 deployment and benchmark reproduction | H100 80 GB |
-| Native vLLM adapter | vLLM scheduling and OpenAI-compatible serving | One H100, TP1 |
-| Native SGLang adapter | SGLang scheduling and OpenAI-compatible serving | One H100, TP1 |
-
-The PyTorch backend implements the same sliding window, fixed-capacity memory, commit boundaries and recurrent state. It does not require FlashAttention, FLA, TileLang or Triton. The accelerated backend retains the published B1 and B32–B512 profiles. Different kernels and arithmetic orders can change individual outputs. CPU and CUDA are verified; Apple MPS, ROCm and other accelerators have not been validated with the released weights.
-
-## Portable installation and Transformers
-
-Install PyTorch for your platform, then use the bundled Transformers version in a separate environment:
+Install PyTorch for your platform, then install the bundled Transformers dependency and runtime:
 
 ```bash
+python -m venv .venv
+source .venv/bin/activate
 python -m pip install ./wheels/transformers-5.7.0.dev0-py3-none-any.whl -e .
-python -I run.py demo --backend torch --device cpu --prompt 'Compute 17 × 23.'
+hf download rockmatrix-ai/EdgeRock --local-dir checkpoints/EdgeRock-4B \
+  --include '*.safetensors' '*.json' '*.py' '*.jinja' 'tokenizer*' 'vocab*' 'merges*' \
+  --exclude 'evaluation_data/*'
 ```
 
-For CUDA without custom extensions, use `--backend torch --device cuda`. `--backend auto` selects the accelerated path on Hopper when its dependencies are available, and otherwise selects PyTorch. FP32 is the CPU default; supported CUDA devices default to BF16.
+The model's serialization identifiers (`modeling_yanchor`, `configuration_yanchor`, and the registered model classes) are retained so the existing checkpoint loads unchanged. The public model and service name is **EdgeRock-4B**. The runtime supplies `runtime/chat_template.jinja` for the text checkpoint; it opens the assistant reasoning segment with `<think>`.
+
+### Portable PyTorch
+
+```bash
+python -I run.py demo --model checkpoints/EdgeRock-4B \
+  --backend torch --device cpu --prompt 'Compute 17 × 23.' --max-new-tokens 512
+```
+
+Use `--backend torch --device cuda` for CUDA without custom extensions. CPU defaults to FP32; supported CUDA devices default to BF16. `--backend auto` selects the optimized path on Hopper when its dependencies are installed and otherwise uses PyTorch. The report's performance results use the optimized Hopper CUDA runtime.
+
+For standard Transformers generation:
 
 ```python
+from pathlib import Path
 import torch
-from transformers import AutoTokenizer, AutoModelForCausalLM
+from transformers import AutoModelForCausalLM, AutoTokenizer
 
-path = "."
+path = "checkpoints/EdgeRock-4B"
 device = "cuda" if torch.cuda.is_available() else "cpu"
 dtype = torch.bfloat16 if device == "cuda" else torch.float32
 tokenizer = AutoTokenizer.from_pretrained(path, trust_remote_code=True)
+tokenizer.chat_template = Path("runtime/chat_template.jinja").read_text()
 model = AutoModelForCausalLM.from_pretrained(
     path, trust_remote_code=True, dtype=dtype, backend="torch"
 ).to(device).eval()
@@ -68,98 +53,99 @@ with torch.inference_mode():
 print(tokenizer.decode(output[0, inputs.input_ids.shape[1]:], skip_special_tokens=True))
 ```
 
-The standard backend uses bounded prefill chunks, 1,024 tokens by default. Set `prefill_chunk_size` when loading to change that workspace tradeoff. Keep the supplied Transformers version for this route; native serving frameworks use their own Transformers dependencies in separate environments.
+### Optimized Hopper environment
 
-## Optimized H100 environment
-
-Use an NVIDIA H100 80 GB, Linux, and the supplied NVIDIA PyTorch container. The base image supplies Python, PyTorch, CUDA and FlashAttention; `requirements.txt` pins the remaining runtime dependencies. The required public Transformers revision is included as a wheel, so installation does not clone GitHub. CUDA extensions build against the container's existing PyTorch. Build on a host with internet access, then transfer the image to the GPU host if needed.
+The supplied Dockerfile installs the pinned CUDA dependencies against its NVIDIA PyTorch base image. Build it on a Linux GPU host:
 
 ```bash
-docker build -t yanchor-runtime .
-docker run --rm --gpus all --ipc=host -v "$PWD:/model" yanchor-runtime demo
+docker build -t edgerock-runtime .
+docker run --rm --gpus all --ipc=host \
+  -v "$PWD/checkpoints/EdgeRock-4B:/checkpoint:ro" \
+  -v "$PWD/outputs:/outputs" edgerock-runtime \
+  demo --model /checkpoint --output /outputs/demo --max-new-tokens 512
 ```
 
-If PyPI downloads are slow, select a mirror with `docker build --build-arg PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple -t yanchor-runtime .`. The build context excludes weights and evaluation data.
+The CUDA path uses FLA, TileLang, causal-conv1d, FlashAttention, and Triton. See `requirements.txt` and the Dockerfile for the pinned environment. First use of a new shape can trigger compilation.
 
-Inside that image, the equivalent command is `python -I run.py demo`. For the examples below, replace `python -I run.py` with the Docker invocation when running from the host. The B1 service loads the model and prewarms its short-input decode path before reporting READY. New input shapes can still trigger compilation on first use. Standalone commands start a fresh process and include cold-start overhead. Output directories must be writable. For Docker HTTP access on Linux, add `--network host` to the Docker invocation.
-
-## Demo and batch inference
+## Generate and serve
 
 ```bash
-python -I run.py demo --prompt 'Compute 17 × 23.'
-python -I run.py serve --batch 1 --port 8000
+python -I run.py demo --model checkpoints/EdgeRock-4B \
+  --backend cuda --profile fast --batch 1 \
+  --prompt 'Compute 17 × 23.' --max-new-tokens 2048
+
+python -I run.py generate --model checkpoints/EdgeRock-4B \
+  --backend cuda --profile fast --batch 32 \
+  --input prompts.jsonl --output outputs/generation
 ```
 
-The service exposes `GET /v1/models` and `POST /v1/chat/completions`, including SSE streaming and token usage. It accepts plain-text messages with one response per request. The lightweight server serializes generation calls; use a native framework for concurrent independent API requests. B1 checks completion every 16 decode steps. The original batch endpoint at `/` accepts a `messages` array or a `prompts` array:
+Each line of `prompts.jsonl` is a JSON object, for example:
 
-```bash
-curl http://127.0.0.1:8000/ -H 'Content-Type: application/json' \
-  -d '{"messages":[{"role":"user","content":"Compute 17 × 23."}],"max_new_tokens":4096}'
+```json
+{"prompt":"Compute 17 × 23.","max_tokens":512}
 ```
 
-A standard streaming request works with either backend:
+`messages` and preformatted `prompt_text` inputs are also accepted. Output directories contain `responses.jsonl` and `metrics.json`.
+
+Start the lightweight text API:
 
 ```bash
-python -I run.py serve --backend torch --device cuda --port 8000
+python -I run.py serve --model checkpoints/EdgeRock-4B \
+  --backend cuda --profile fast --batch 1 --port 8000
 curl http://127.0.0.1:8000/v1/chat/completions \
   -H 'Content-Type: application/json' \
-  -d '{"model":"YANchor-4B","messages":[{"role":"user","content":"Compute 17 × 23."}],"temperature":0,"max_tokens":512,"stream":true,"stream_options":{"include_usage":true}}'
+  -d '{"model":"EdgeRock-4B","messages":[{"role":"user","content":"Compute 17 × 23."}],"temperature":0,"max_tokens":512,"stream":true,"stream_options":{"include_usage":true}}'
 ```
 
-All supported deployment sizes use the same entrypoint:
+The server supports `GET /v1/models`, text chat completions, SSE streaming, and token usage. It serializes generation calls; native frameworks provide scheduling for concurrent independent API requests. The batch endpoint at `/` accepts a `messages` array or a `prompts` array.
 
-| Batch | Launch option | MLP compute | GDN state |
-|---:|---|---|---|
-| 1 | `--batch 1 --profile fast` | INT8 GEMV | FP32 |
-| 32 | `--batch 32 --profile fast` | BF16 | FP16 |
-| 64 | `--batch 64 --profile fast` | BF16 | FP16 |
-| 128 | `--batch 128 --profile fast` | BF16 | FP16 |
-| 256 | `--batch 256 --profile fast` | BF16 | FP16 |
-| 320 | `--batch 320 --profile fast` | BF16 | FP16 |
-| 512 | `--batch 512 --profile fast` | BF16 | FP16 |
+## Precision profiles
 
-`--batch` is the per-GPU slot capacity. Short input lists use only the required slots. Supply a list of prompts to the service, or a JSONL file containing one `{"prompt":"..."}` object per line:
+| Profile | Weights / MLP / output head | Local and anchor KV | GDN recurrence |
+| --- | --- | --- | --- |
+| `fast`, every batch size | BF16, unquantized | BF16 | FP32 |
+| `reference`, CUDA BF16 | BF16, unquantized | BF16 | FP32 |
+
+`fast` enables the selected BF16 optimizations and, at batch size 512, shared packed-weight storage. `reference` retains reference local-attention arithmetic. Neither profile silently selects INT8 MLP or FP16 recurrent state. The report uses the fast profile; all history remains on the GPU, and decoding is not speculative.
+
+## Reproduce fixed-length performance workloads
 
 ```bash
-python -I run.py generate --batch 320 --input prompts.jsonl --output outputs/generated
+# Single request, sustained generation
+python -I run.py benchmark --model checkpoints/EdgeRock-4B \
+  --profile fast --batch 1 --prefill 131072 --max-new-tokens 131072 \
+  --output outputs/b1-128k-128k.json
+
+# Batch size 512, 32K input and 32K output
+python -I run.py benchmark --model checkpoints/EdgeRock-4B \
+  --profile fast --batch 512 --prefill 32768 --max-new-tokens 32768 \
+  --output outputs/b512-32k-32k.json
+
+# Short workload
+python -I run.py benchmark --model checkpoints/EdgeRock-4B \
+  --profile fast --batch 1 --prefill 4096 --max-new-tokens 2048 \
+  --output outputs/b1-4k-2k.json
 ```
 
-The `fast` profile uses CUDA Graphs, packed projections, fused normalization and gates, bounded prefill, fixed-capacity GQA memory and physical sliding-window caches. B1 additionally uses the INT8 MLP GEMV path; B32–B512 use BF16 MLPs and FP16 GDN state. Model weights on disk remain BF16. `--profile reference` disables the B1 INT8 MLP and keeps FP32 GDN state and reproducible sliding-window arithmetic. These arithmetic profiles can yield different individual sampled answers.
+Each invocation includes a separate 256-token warmup. Use three fresh processes per configuration. The benchmark uses synthetic tokens, temperature 1, top-k 20, top-p 0.95, presence penalty 1.5, EOS disabled, and fixed output length. Batch size 1 uses one prompt; larger batches use up to eight continuations per prompt (`--k 8` from batch size 8 onward). `--k 1` requests unique prompts.
 
-Prefill, pure decode and model loading are reported separately. To measure all seven fixed-work batch sizes, invoke the same benchmark command with each batch value. Independent commands may run on separate GPUs:
+The fixed-length single-request benchmark uses the selected output-head/sampling-state fusion. General generation uses the native generator to retain EOS, configurable sampling, streaming, and refill behavior. Both keep the same model precision and history capacity.
 
-```bash
-CUDA_VISIBLE_DEVICES=0 python -I run.py benchmark --batch 1 --prefill 4096 --max-new-tokens 4096 --output outputs/b1.json
-CUDA_VISIBLE_DEVICES=1 python -I run.py benchmark --batch 320 --prefill 4096 --max-new-tokens 4096 --output outputs/b320.json
-```
-
-The benchmark warms up first, disables EOS and mechanical-loop stopping for fixed work, and measures pure decode independently of prefill. Use identical input/output lengths for comparisons: graph setup and completion polling remain in the decode denominator and have a larger effect on short outputs. Cold-start demo timings do not measure warmed sustained decode throughput. B1 uses K1; larger batches use K8 prompt sharing by default. `--k 1` selects unique prompts. Benchmark token sequences are synthetic; they are not capability questions.
+`decode_tokens_per_second` excludes prefill and the first token of each response. `end_to_end_output_tokens_per_second` counts all generated output tokens and includes prefill **time**, but never input tokens. Loading, warmup, tokenization, and text decoding are outside these timings. [Complete workload grid and results](docs/runtime.md).
 
 ## Native serving frameworks
 
-Use a separate environment for each framework. The native adapters retain framework scheduling, attention and GDN execution, with YANchor memory stored in the framework's request slots. Decode accesses memory in place through GPU slot indices and uses CUDA Graphs, packed memory projections and fused normalization. These routes cover text generation on one GPU, TP1, with prefix caching and speculative decoding disabled. Prefill runs eagerly. Vision evaluation continues to use the bundled evaluator.
-
-The commands below enable `YANCHOR_NATIVE_FAST=1`: B1 decode uses the same group-256 INT8 MLP GEMV arithmetic as the specialized runtime; prefill and larger batches keep BF16 MLPs. GDN state remains FP32. vLLM also combines its B1 GDN input projections. Omit this environment variable for BF16 MLP execution. Weights on disk and tokenizer are unchanged. Arithmetic profiles and framework sampling implementations can produce different individual answers.
-
-On one H100 80 GB, a warmed B1 workload with 4,096 input tokens and 2,048 output tokens gave the following results. All routes used temperature 1.0, top-k 20, top-p 0.95, presence penalty 1.5, the fast B1 MLP profile, and ignored EOS for this fixed-workload measurement. Decode excludes prefill, initialization and graph capture.
-
-| Route | Pure decode, token/s | Warm HTTP TTFT, seconds |
-|---|---:|---:|
-| Specialized CUDA runtime | 212.5 | — |
-| SGLang, explicit seed | 205.7 | 0.102 |
-| vLLM, explicit seed | 186.9 | 0.126 |
-| vLLM, no explicit seed | 193.1 | 0.118 |
-
-The specialized runtime was measured in process; its prefill time was 0.122 seconds. Framework measurements used streamed HTTP responses and timed TTFT to the first text content. Seeded runs used seed 20264924; each framework retains its own sampling implementation. The unseeded vLLM row uses its faster default sampling path. These fixed-workload measurements do not predict every prompt's latency or establish answer equivalence across runtimes.
+Use separate environments for vLLM and SGLang and retain each framework's dependencies. The adapters implement fixed-memory state in request slots, on one GPU with tensor-parallel size one. Prefix caching and speculative decoding remain disabled. These are separate serving implementations from the report's specialized CUDA runtime.
 
 ### vLLM
 
-Verified with vLLM `0.28.1rc1.dev13+g76c0c6530`, PyTorch `2.13.0+cu130`, and Transformers `5.16.1`. In that vLLM environment, install only the adapter; retain the framework's own dependencies:
+The adapter has been exercised with vLLM `0.28.1rc1.dev13+g76c0c6530`, PyTorch `2.13.0+cu130`, and Transformers `5.16.1`:
 
 ```bash
 python -m pip install --no-deps --no-build-isolation -e .
-YANCHOR_NATIVE_FAST=1 VLLM_PLUGINS=yanchor vllm serve "$PWD" \
-  --trust-remote-code --served-model-name YANchor-4B \
+VLLM_PLUGINS=yanchor vllm serve "$PWD/checkpoints/EdgeRock-4B" \
+  --trust-remote-code --served-model-name EdgeRock-4B \
+  --chat-template "$PWD/runtime/chat_template.jinja" \
   --dtype bfloat16 --max-model-len 16384 \
   --max-num-batched-tokens 4096 --max-num-seqs 4 \
   --gpu-memory-utilization 0.6 --no-enable-prefix-caching \
@@ -168,16 +154,17 @@ YANCHOR_NATIVE_FAST=1 VLLM_PLUGINS=yanchor vllm serve "$PWD" \
   --additional-config '{"gdn_prefill_backend":"triton"}'
 ```
 
-The plugin is registered through vLLM's model registry. Independent memory is stored in its allocated state-cache pages and follows the framework's slot ownership. The fused normalization retains vLLM's FP32 residual-add arithmetic. Keep prefix caching and speculative decoding disabled for this adapter. This vLLM version uses a slower sampling implementation when a request specifies a seed; the adapter preserves that seeded behavior.
+The plugin identifier remains `yanchor` for checkpoint compatibility. The command uses BF16 MLP execution and FP32 recurrent state.
 
 ### SGLang
 
-Verified with SGLang `0.5.20`, PyTorch `2.13.0+cu130`, and Transformers `5.12.1`. In that SGLang environment:
+The adapter has been exercised with SGLang `0.5.20`, PyTorch `2.13.0+cu130`, and Transformers `5.12.1`:
 
 ```bash
 python -m pip install --no-deps --no-build-isolation -e .
-YANCHOR_NATIVE_FAST=1 SGLANG_EXTERNAL_MODEL_PACKAGE=sglang_models python -m sglang.launch_server \
-  --model-path "$PWD" --trust-remote-code --served-model-name YANchor-4B \
+SGLANG_EXTERNAL_MODEL_PACKAGE=sglang_models python -m sglang.launch_server \
+  --model-path "$PWD/checkpoints/EdgeRock-4B" --trust-remote-code --served-model-name EdgeRock-4B \
+  --chat-template "$PWD/runtime/chat_template.jinja" \
   --dtype bfloat16 --context-length 16384 --chunked-prefill-size 4096 \
   --max-running-requests 4 --max-mamba-cache-size 4 \
   --max-total-tokens 65536 --mem-fraction-static 0.6 \
@@ -188,57 +175,29 @@ YANCHOR_NATIVE_FAST=1 SGLANG_EXTERNAL_MODEL_PACKAGE=sglang_models python -m sgla
   --mamba-ssm-dtype float32
 ```
 
-SGLang uses its pure sliding-window cache, recurrent-state pool and overlapping scheduler. Independent memory is registered with the slot lifecycle, including reset and copy operations. The H100 configuration uses FA3 because this SGLang version's pure sliding-window allocator requires page size 1, which is incompatible with its H100 FA4 paged kernel. Set both request and Mamba-slot capacities together; the independent memory allocation grows with the Mamba-slot capacity. The supplied four-request configuration leaves memory headroom for this state.
-
-The native framework commands were exercised with a 15,312-token published memory input, complete EOS-terminated answers, concurrent requests and subsequent slot reuse. This establishes those paths; longer native-framework contexts, tensor/pipeline parallelism, prefix-cache reuse, quantized model loading and speculative decoding are outside the verified configuration. Standard Transformers and the specialized runtime retain their configured context budgets.
+Set request and Mamba-slot capacities together: anchor-state allocation follows Mamba-slot capacity. These framework paths have been exercised with complete EOS-terminated answers, concurrent requests, and slot reuse. The report's long-generation measurements come from the specialized runtime above.
 
 ## Evaluation
 
-By default, evaluation processes every question supplied for each source, with no additional per-source question limit. Run the complete designated evaluation splits with:
+Download evaluation inputs and the visual frontend into the checkpoint directory, then install the evaluation dependencies:
 
 ```bash
-python -I run.py evaluate --suite text --gpus 0,1,2,3,4,5,6,7 --batch 320 --output outputs/text
-python -I run.py evaluate --suite vision --gpus 0,1,2,3,4,5,6,7 --output outputs/vision
-python -I run.py evaluate --suite memory --gpus 0,1,2,3,4,5,6,7 --output outputs/memory
+hf download rockmatrix-ai/EdgeRock --local-dir checkpoints/EdgeRock-4B \
+  --include 'evaluation_data/*' 'vision/*'
+python -m pip install -e '.[evaluation]'
+
+python -I run.py evaluate --model checkpoints/EdgeRock-4B \
+  --suite text --gpus 0,1,2,3,4,5,6,7 --batch 320 --output outputs/text
+python -I run.py evaluate --model checkpoints/EdgeRock-4B \
+  --suite vision --gpus 0,1,2,3,4,5,6,7 --output outputs/vision
+python -I run.py evaluate --model checkpoints/EdgeRock-4B \
+  --suite memory --gpus 0,1,2,3,4,5,6,7 --output outputs/memory
 python -I run.py status --output outputs/text
+python -I run.py score --model checkpoints/EdgeRock-4B --output outputs/text
 ```
 
-Use a fresh output directory for each evaluation. The CPU broker distributes attempts among GPU replicas; completed slots are refilled while other answers continue. Workers write response fragments, exit, and then CPU scoring starts. `--generate-only` stops after generation. Existing fragments can be scored with `python -I run.py score --output outputs/text`, without GPUs.
+Use a fresh output directory for each evaluation. `--generate-only` stops after response generation; `score` runs CPU verification on existing fragments. `--sources` selects benchmarks, and `--k` overrides the automatic repetition count. The report's text settings are temperature 0.6, top-p 0.95, top-k 20, presence penalty 0, seed 20260923, and a 131,072-token response cap. Automatic repetition is 64 responses for sources below 100 questions, 16 for 100–10,000, and one above 10,000. Visual and memory diagnostics use reference arithmetic.
 
-`evaluation_data/MANIFEST.json` lists the designated evaluation splits and their complete question counts. The text evaluation contains **113,743 questions across 29 sources** and expands to **715,267 responses** under automatic K. The report compares all 29 text sources. Auto-K uses the complete source size: fewer than 100 questions → K64; 100–10,000 → K16; above 10,000 → K1. `--sources AIME2024 DROP` selects sources.
+Final-answer extraction is independent of the reference answer. Code is checked by executable tests; IFEval and IFBench use strict instruction verification. DROP contributes F1 to the aggregate, and subject/subtask macro-averages are preserved where prescribed. [Results and metric definitions](docs/results.md) and Appendix A of the report give the complete protocol.
 
-Text generation uses temperature 0.6, top-k 20, top-p 0.95, no presence penalty, seed 20260923 and a 131,072-token output cap. The frozen `prompt_text` is the model input; references and executable tests are consumed only by CPU scorers. Every sampled trajectory contributes to the accuracy denominator. Fixed seeds and large K support statistical reproduction; arithmetic order and batch shapes can change individual trajectories.
-
-The visual panel contains 26,668 inputs from seven sources. The report presents six of them; OCRBench is included as an additional evaluation. It uses K1, reference arithmetic, B128, temperature 1, top-k 20, top-p 0.95, presence penalty 1.5, seed 20260912 and a 32,768-token cap. One damaged AI2D item is excluded by the supplied reference correction, leaving 26,667 scored responses. Image processing uses the included visual frontend and a 65,536–4,194,304 pixel range.
-
-Visual media are stored losslessly in `evaluation_data/vision/media.zip` and read directly by the evaluator; extraction is not required.
-
-The memory panel contains only the four tasks in Section 9 of the technical report: exact retrieval, state-update interpretation, cross-document combination and variable binding. Each task has 64 contexts, for 256 contexts and 1,024 queries in total. Contexts form original/counterfactual pairs and span approximately 16K–130K tokens. Evaluation uses greedy K1, reference arithmetic, B1, seed 2026091707 and a 1,024-token output cap. Results include query accuracy, all-four-correct accuracy, the four task breakdowns, and both-correct accuracy for paired queries whose answers should change or remain stable.
-
-### Scoring
-
-All 29 text sources use the v43 answer-verification implementation in `runtime/evaluation/` and `runtime/scoring/`. Final-answer extraction is independent of the reference answer; it recognizes explicit terminal choices and equivalent numeric forms while retaining ambiguity checks. Each benchmark keeps its scoring metric and full questions × K denominator. `RESULTS.json` records `cpu_verifier_revision`. IFEval and IFBench fix the language-detector seed to 0.
-
-| Sources | Rule |
-|---|---|
-| AIME, HMMT, GSM8K, MATH500 | Reference-independent answer extraction; numeric, structured and symbolic equivalence, with math-verify where needed. |
-| ARC, C-Eval, CMMLU, GPQA, HellaSwag, MMLU family, SuperGPQA, WinoGrande | Typed option extraction and comparison against the supplied option layout. Competing commitments do not receive credit. |
-| BBH, BBEH | Task-specific deterministic comparison; the official BBEH comparison is included. |
-| HumanEval, MBPP | Execute the submitted Python program against the supplied tests. |
-| LiveCodeBenchV6 | Official execution backend with the supplied public and hidden tests. |
-| IFEval, IFBench | Official strict instruction checks. Whole-prompt success requires every instruction; per-instruction outcomes are retained. |
-| DROP | Official span normalization, numeric matching and optimal alignment. F1 is primary; exact match is also reported. |
-| MuSR | Option accuracy, macro-averaged over the three task subsets. |
-| LogiQA2 | Option accuracy over the supplied English panel. |
-
-The primary metric is `official_primary_mean_pass_at_1` for correctness-based text tasks and `score` for DROP, MuSR and LogiQA2. Source-specific macro averages and the corrected MMLU-Redux view are preserved. Mean accuracy averages the K sampled answers, with all question × K attempts in the denominator; observed pass@K is reported separately.
-
-The final-answer region is preferred. A clearly committed terminal answer in reasoning can retain semantic correctness while failing the strict output contract. Extraction never chooses a candidate because it matches the reference. Unresolved answers receive no success credit and retain diagnostic verdicts. Visual metrics include source accuracy, MMBench circular accuracy, MME category totals and POPE precision/recall/F1, without an external model judge.
-
-Text responses stop at EOS, the token budget or an exact mechanical loop with a period of 128–256 tokens repeated eight times. Bounded suffix checks share completion-check intervals. Visual and memory runs retain their respective stopping rules.
-
-### Outputs and monitoring
-
-`STATUS.json` records expected, claimed and completed attempts. During generation, `total_decode_tokens_per_second` sums recent pure-decode rates across active ranks. `rank-*-metrics.json` separates initial prefill, refill prefill, pure decode, useful output tokens and peak GPU memory. Pure-decode rates exclude prefill and the first token of each response.
-
-`GENERATION_COMPLETE.json` records persisted generation counts. `RESULTS.json` contains scores, denominators and sampling settings after scoring. A partial run is marked `INCOMPLETE`.
+`STATUS.json` tracks attempts; `GENERATION_COMPLETE.json` records persisted generation counts; `RESULTS.json` contains scores, denominators, and sampling settings after verification. A partial run is marked `INCOMPLETE`.
