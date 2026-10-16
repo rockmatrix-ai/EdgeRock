@@ -1,10 +1,10 @@
-\section{Inference speed and memory efficiency}
+\section{What does constant memory buy in deployment?}
 \label{sec:systems}
 
 Constant memory turns directly into serving gains. On one Hopper 80GB GPU, EdgeRock-4B decodes a single request at \textbf{\EdgeLongTPS{} tokens/s} through 128K output, runs \textbf{512} long-generation sequences at once, and averages \textbf{\EdgeBatchRatio{}$\times$} Qwen3.5-4B's end-to-end throughput. These results combine constant persistent history with CUDA Graphs and fused BF16 kernels (Appendix~\ref{app:runtime}); the same unquantized weights, BF16 KV, and FP32 recurrent state serve both single requests and concurrent batches.
 
 \FloatBarrier
-\subsection{Sustained decoding and long-generation throughput}
+\subsection{Steady decoding and higher throughput}
 \label{sec:throughput}\label{sec:batch}
 
 \paragraph{Single-request decoding.}
@@ -22,7 +22,7 @@ Across 4K, 8K, 16K, and 32K inputs with 32K output, EdgeRock-4B averages \textbf
 
 
 \FloatBarrier
-\subsection{Scaling concurrency and response rate}
+\subsection{Concurrency scales to 512 sequences on one GPU}
 \label{app:latency-memory}
 
 EdgeRock-4B supports \textbf{512 concurrent sequences} across all 16 input/output combinations of 4K, 8K, 16K, and 32K tokens on one Hopper 80GB. At batch size $512$, weighted decoding reaches \textbf{\EdgeWeightedTPS{} tokens/s}, or \textbf{\EdgePerSequenceTPS{} tokens/s per active sequence}, with the same precision as single-request decoding (Figure~\ref{fig:batch-scaling}).
@@ -30,28 +30,26 @@ EdgeRock-4B supports \textbf{512 concurrent sequences} across all 16 input/outpu
 \begin{figure}[!htbp]
 \centering
 \includegraphics[width=\linewidth]{batch_scaling.pdf}
-\caption{\textbf{Concurrency scaling.} EdgeRock-4B runs 32--512 active sequences on one Hopper 80GB GPU with BF16 weights, BF16 KV, and FP32 recurrence. Rates pool decode tokens and elapsed decode time across all 16 input/output pairs formed from 4K, 8K, 16K, and 32K lengths. \textbf{(a)} Aggregate throughput reaches \EdgeWeightedTPS{} tokens/s at batch size $512$. \textbf{(b)} Aggregate throughput divided by the active batch gives the mean rate per sequence: \EdgePerSequenceTPS{} tokens/s at batch size $512$.}
+\caption{\textbf{Concurrency scaling.} EdgeRock-4B with 32--512 active sequences on one Hopper 80GB GPU (BF16 weights and KV, FP32 recurrence). Rates pool decode tokens and time across all 16 input/output pairs from 4K to 32K. \textbf{(a)} Aggregate throughput. \textbf{(b)} Mean rate per active sequence.}
 \label{fig:batch-scaling}
 \end{figure}
 
 \FloatBarrier
-\subsection{Short-context decoding: 4K input, 2K output}
+\subsection{Efficient decoding at short contexts}
 \label{sec:short}
 
 EdgeRock-4B reaches a decode rate of \textbf{\EdgeShortTPS{} tokens/s} at batch size $1$ and \textbf{\EdgeShortBatchTPS{} tokens/s} at batch size $512$ for 4K input and 2K output, excluding prefill. At batch size $1$, peak tensor allocation is \textbf{\EdgeShortMemory{}\,GiB} (Appendix Table~\ref{tab:short-scaling}).
 
 
 \FloatBarrier
-\subsection{Fixed history and measured GPU memory}
+\subsection{Memory known before reasoning starts}
 \label{sec:cache}
 
-Local attention and RMA keep history KV storage \textbf{$O(1)$ in sequence length}, with a BF16 capacity of \textbf{72\,MiB per sequence}. At 256K context, this is \textbf{99.1\% less KV} than Qwen3.5-4B's full-attention cache (Figure~\ref{fig:overview}b). Qwen3.5-4B is itself a hybrid that keeps full attention in only 8 of its 32 layers; the reduction removes the growth that this design leaves. Including FP32 recurrence and auxiliary tensors, persistent history totals \textbf{121.76\,MiB per sequence} (Table~\ref{tab:state-budget}).
-
-A single 128K-input/128K-output request peaks at \textbf{\EdgeLongMemory{}\,GiB} of tensor allocation. At batch size $512$, the maximum across all 16 workloads is \textbf{\EdgeBatchMemory{}\,GiB}, including weights and execution workspaces (Figure~\ref{fig:memory-capacity}). History capacity depends on concurrency rather than sequence length; input/output buffers and workspace account for the remaining workload-dependent allocation. For a single request, the memory a reasoning trace needs is therefore known before it starts: weights plus 121.76\,MiB of history, whether the model reasons for 4K tokens or 256K. That predictability is what edge deployment requires when reasoning shares memory with perception.
+Every sequence carries the same \textbf{121.76\,MiB} of history, whether EdgeRock-4B reasons for 4K tokens or 256K (Table~\ref{tab:state-budget}). Its \textbf{72\,MiB} of attention KV is \textbf{99.1\%} smaller than Qwen3.5-4B's at 256K (Figure~\ref{fig:overview}b). On one Hopper 80GB GPU, a single 128K-input/128K-output request peaks at \textbf{\EdgeLongMemory{}\,GiB}, and 512 concurrent sequences need at most \textbf{\EdgeBatchMemory{}\,GiB} across all 16 workloads (Figure~\ref{fig:memory-capacity}).
 
 \begin{figure}[!htbp]
 \centering
 \includegraphics[width=\linewidth]{memory_capacity.pdf}
-\caption{\textbf{GPU memory scaling.} EdgeRock-4B's peak tensor allocation includes model weights, persistent history, input/output buffers, and execution workspace, using BF16 weights, BF16 KV, and FP32 recurrence on one Hopper 80GB GPU. \textbf{(a)} Memory scales with concurrent requests at 4K input and 2K output. \textbf{(b)} At each fixed batch, allocation changes little as input grows from 4K to 32K with 32K output. At batch size $512$, allocation stays below 73.3\,GiB across these lengths; the dashed line marks GPU capacity.}
+\caption{\textbf{GPU memory scaling.} Peak tensor allocation of EdgeRock-4B on one Hopper 80GB GPU, including weights, history, buffers, and workspace; the dashed line marks GPU capacity. \textbf{(a)} By batch size, at 4K input and 2K output. \textbf{(b)} By input length, with 32K output; allocation stays nearly flat at each batch size.}
 \label{fig:memory-capacity}
 \end{figure}

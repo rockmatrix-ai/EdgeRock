@@ -43,7 +43,7 @@ EdgeRock and LFM test batches 32, 64, 128, 256, 320, 384, and 512; Qwen and Mini
 The vLLM peers use CUDA Graphs, chunked prefill, and a 16K prefill-token budget. Qwen, Gemma, and MiniCPM use asynchronous scheduling. Gemma, MiniCPM, and LFM use 95\% GPU-memory utilization. The synthetic single-request workloads use a 256K execution capacity with unchanged weights and RoPE frequencies. Gemma E4B denotes effective scale; its full checkpoint is approximately 8B parameters. MiniCPM's checkpoint is approximately 2.52B.
 
 \subsection{History and device allocation}
-The local and anchor KV budget is a configuration-derived payload bound. During decoding, the local cache stores 1,023 preceding positions and the decoder supplies the current token. The audited logical tensors in Table~\ref{tab:state-budget} total 121.76\,MiB per sequence, including FP32 recurrence, convolution state, and anchor metadata.
+The 72\,MiB of attention KV is a configuration-derived bound. During decoding, the local cache stores 1,023 preceding positions and the decoder supplies the current token. The audited logical tensors in Table~\ref{tab:state-budget} total 121.76\,MiB per sequence, including FP32 recurrence, convolution state, and anchor metadata.
 
 Peak tensor allocation includes weights, history, input/output buffers, graph storage, and temporary workspace. Reserved memory also includes cached allocator blocks. At batch size $512$, shared storage for original and packed BF16 projections eliminates duplicate weights while retaining the full history capacity.
 

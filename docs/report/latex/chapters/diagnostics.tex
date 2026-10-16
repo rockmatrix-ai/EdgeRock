@@ -1,20 +1,20 @@
-\section{Using distant memory in reasoning}
+\section{Do distant answers depend on RMA?}
 \label{sec:diagnostic}
 
-RMA is what lets EdgeRock-4B use evidence beyond its local window. On 256 contexts of 16K to 130,000 input tokens, with four queries each covering retrieval, state updates, cross-document combination, and variable binding, it answers \textbf{94.1\%} of queries; with RMA disabled, it answers \textbf{0.4\%} (Figure~\ref{fig:memory}).
+RMA is what lets EdgeRock-4B use evidence beyond its local window. On 256 contexts of 16K to 130,000 input tokens, with four queries each covering retrieval, state updates, cross-document combination, and variable binding, it answers \textbf{94.1\%} of queries; with RMA disabled, it answers \textbf{0.4\%} (Figure~\ref{fig:memory}). Memory is learned early and kept through post-training: query accuracy rises from 79.4\% after RMA adaptation (M0) to 96.1\% after joint adaptation (R) and stays at 94.1\% in the final model (Figure~\ref{fig:memory}a).
 
 \begin{figure}[!htbp]
 \centering
 \includegraphics[width=\linewidth]{memory_diagnostic.pdf}
-\caption{\textbf{Distant-memory reasoning.} \textbf{(a)} Query accuracy and complete-context success after RMA adaptation (M0), joint adaptation (R), supervised fine-tuning (S), and reinforcement learning with verifiable rewards (RLVR). Complete-context success requires all four answers to be correct. \textbf{(b)} The final model with all eight RMA modules off or on; recurrence and local attention remain active in both settings. With RMA enabled, EdgeRock correctly answers 94.1\% of queries and completes 80.1\% of contexts across retrieval, state updates, cross-document combination, and variable binding.}
+\caption{\textbf{Distant-memory reasoning.} \textbf{(a)} Query accuracy and complete-context success after RMA adaptation (M0), joint adaptation (R), supervised fine-tuning (S), and reinforcement learning with verifiable rewards (RLVR). Complete-context success requires all four answers to be correct. \textbf{(b)} The final model with all eight RMA modules on or off; recurrence and local attention remain active in both settings. With RMA enabled, EdgeRock correctly answers 94.1\% of queries and completes 80.1\% of contexts across retrieval, state updates, cross-document combination, and variable binding.}
 \label{fig:memory}
 \end{figure}
 
-\subsection{Disabling RMA}
+\subsection{Without RMA, distant recall collapses}
 \label{sec:memory-branch-intervention}
 All eight RMA modules are disabled at inference time while the recurrent backbone and local attention remain active. Correct answers fall from 964 to 4 of 1,024 queries, and complete-context success from 205 to 0 of 256 contexts (Figure~\ref{fig:memory}). Because RMA is disabled only at inference, this shows that in the trained model, distant answers flow through RMA rather than through recurrence or the local window.
 
-\subsection{Using retained evidence}
+\subsection{RMA across memory tasks}
 \paragraph{Task breakdown.}
 EdgeRock-4B achieves 90.6\% complete-context success on exact retrieval, 87.5\% on state-update interpretation, and 89.1\% on cross-document combination (Table~\ref{tab:memory-task-breakdown}).
 

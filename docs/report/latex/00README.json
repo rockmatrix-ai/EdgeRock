@@ -1,0 +1,11 @@
+{
+  "process": {
+    "compiler": "xelatex"
+  },
+  "sources": [
+    {
+      "filename": "main.tex",
+      "usage": "toplevel"
+    }
+  ]
+}

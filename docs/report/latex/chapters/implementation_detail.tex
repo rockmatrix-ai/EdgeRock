@@ -28,22 +28,6 @@ Progress metadata & Position and block progress, plus association with the activ
 
 Model weights are shared across requests; history occupies independent slots in shared cache pools. Extending a request reuses its history capacity, while admitting another request allocates an additional slot.
 
-\subsection{Selection invariants and information availability}
-
-Each KV group examines at most 1,280 records at a boundary and retains up to 1,024, preserving the surviving key and value vectors unchanged. Fixed write-time scores and consistent tie ordering maintain the history top-$K$ invariant in Equation~\ref{eq:history-topk}. Query heads share the group's bank and compute independent retrieval weights. Local and memory attention normalize separately; an empty bank returns zero.
-
-\subsection{Continuation, chunking, and request lifecycle}
-
-The portable backend defaults to 1,024-token prefill chunks. Chunking bounds the working set while preserving local, recurrent, and anchor state. RMA commits remain tied to completed candidate blocks, independently of execution chunk boundaries.
-
-Prefix resumption restores every component in Table~\ref{tab:streaming-state}, including unfinished candidates, so their records participate in the next commit.
-
-Native adapters access history in place through GPU request-slot indices. SGLang~\cite{sglang} reset and copy operations initialize reassigned slots and preserve continuing requests.
-
-
-\paragraph{Released positional configuration.}
-RMA uses partial RoPE over 64 of 256 coordinates, base $10^7$, default scaling, and a maximum-position execution setting of 262,144. Multimodal positions use interleaved rotary sections $(11,11,10)$; text supplies the same cumulative token index on all three axes~\cite{edgerockcode,edgerockconfig}.
-
 \Needspace{32\baselineskip}
 \subsection{Forward procedure and causal visibility}
 
@@ -75,3 +59,19 @@ Prefill and decode follow Algorithm~\ref{alg:anchor-update} with the same logica
 \end{algorithm}
 
 \texttt{ReadAndGate} combines query projection, committed-bank attention with the null item, the signed gate, and output projection (Section~\ref{sec:memory-algorithm}). \texttt{MemoryKV} applies the writer's key and value projections, key normalization, and rotary encoding. Local attention includes the current token and retains at most $W=1{,}024$ positions. Top-$K$ ties favor earlier source positions. A new sequence starts with empty local state, anchor banks, and candidate buffers; unfinished candidate blocks persist across prefill chunks and request pauses.
+
+\subsection{Selection invariants and information availability}
+
+Each KV group examines at most 1,280 records at a boundary and retains up to 1,024, preserving the surviving key and value vectors unchanged. Fixed write-time scores and consistent tie ordering maintain the history top-$K$ invariant in Equation~\ref{eq:history-topk}. Query heads share the group's bank and compute independent retrieval weights. Local and memory attention normalize separately; an empty bank returns zero.
+
+\subsection{Continuation, chunking, and request lifecycle}
+
+The portable backend defaults to 1,024-token prefill chunks. Chunking bounds the working set while preserving local, recurrent, and anchor state. RMA commits remain tied to completed candidate blocks, independently of execution chunk boundaries.
+
+Prefix resumption restores every component in Table~\ref{tab:streaming-state}, including unfinished candidates, so their records participate in the next commit.
+
+Native adapters access history in place through GPU request-slot indices. SGLang~\cite{sglang} reset and copy operations initialize reassigned slots and preserve continuing requests.
+
+
+\paragraph{Released positional configuration.}
+RMA uses partial RoPE over 64 of 256 coordinates, base $10^7$, default scaling, and a maximum-position execution setting of 262,144. Multimodal positions use interleaved rotary sections $(11,11,10)$; text supplies the same cumulative token index on all three axes~\cite{edgerockcode,edgerockconfig}.

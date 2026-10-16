@@ -1,4 +1,4 @@
-\section{Architecture: Recurrent State, Local Attention, and RMA}
+\section{How is EdgeRock built?}
 \label{sec:architecture}
 
 \subsection{Decoder layout}
@@ -55,7 +55,11 @@ Candidate block $C$ & 256 & RMA KV precision & BF16\\
 \end{table}
 
 \FloatBarrier
-\section{Rock Memory Anchors (RMA): Writing, Selection, and Retrieval}
+\subsection{Staged conversion}
+\label{sec:training}
+EdgeRock-4B is converted from Qwen3.5-4B in four stages. RMA adaptation (M0) teaches the new RMA modules to retain and retrieve information needed for later predictions. Joint adaptation (R) trains RMA together with the recurrent and local-attention backbone, so downstream layers learn to use what is retrieved. Supervised post-training (S) develops general-purpose responses with the adapted history mechanism, and reinforcement learning with verifiable rewards (RLVR)~\cite{tulu3,deepseekr1} refines responses using feedback on answer correctness and task completion. Section~\ref{sec:diagnostic} tracks memory accuracy after each stage (Figure~\ref{fig:memory}a).
+
+\section{How do Rock Memory Anchors preserve distant information?}
 \label{sec:memory-algorithm}
 
 At each token, RMA reads the committed anchor bank and produces a candidate record from the same causal input. At each block boundary, admission selects records from the bank and the new candidates; the updated bank becomes readable in the next block. Local attention covers recent tokens while candidates accumulate. Algorithm~\ref{alg:anchor-update} in Appendix~\ref{sec:streaming-execution} gives the complete per-token procedure.
@@ -97,7 +101,7 @@ The operator $\operatorname{TopK}(A;K)$ retains up to $K$ records, ordered by de
 Every discarded record already has at least $K$ records ahead of it, so later candidates cannot bring it into the global top $K$. The update therefore maintains the highest-priority records from all completed blocks using bounded storage. Capacity limits record count, not retention age: a record remains directly addressable until displaced by admission.
 
 \Needspace{10\baselineskip}
-\subsection{Query-Dependent Retrieval from the Anchor Bank}
+\subsection{Query-dependent retrieval from the anchor bank}
 \label{sec:read}
 
 A later query can address any retained record, including one whose source position has left the local window. Each module uses 16 query heads over four KV groups~\cite{gqa}, with head dimension $d=256$. Queries and keys use learned RMS normalization~\cite{rmsnorm,edgerockcode,edgerockconfig}:
@@ -146,12 +150,12 @@ Admission determines which records are available, retrieval determines their con
 \paragraph{Relation to other retained-memory designs.}
 Several designs also keep a small set of key--value records next to a compressed or local history. AnLLM trains a model to summarize each text segment into an anchor token and keep only those tokens' keys and values~\cite{anllm}; its anchors still accumulate as the sequence grows. HOLA adds to a linear-attention model a bounded cache of recurrent keys and values ranked by a fixed, parameter-free priority~\cite{hola}, and LTE learns per-head scores that decide which tokens to retain as they leave a sliding window~\cite{lte}. RMA differs in three ways: an independent writer produces dedicated records rather than copying existing keys and values; a causal scorer admits them into a fixed-size bank through per-group top-$K$ commits every 256 tokens; and a separately normalized, gated read integrates them alongside local attention in a converted reasoning model.
 
-\section{Constant memory and linear-time generation}
+\section{What stays constant as context grows?}
 \label{sec:complexity}
 
 Fixed-size recurrent state, the local window, and anchor banks bound both stored history and per-token history access.
 
-\subsection{Memory Complexity with Respect to Sequence Length}
+\subsection{Memory that does not grow with sequence length}
 
 For prompt length $P$ and generated length $N$, hold model dimensions, layer counts, precision, local window $W$, memory capacity $K$ and block size $C$ fixed. Storage counts fixed-width tensor elements and metadata words. The complete persistent history allocation is
 \begin{equation}
@@ -163,7 +167,7 @@ Recurrent matrices, the local ring, committed anchor banks, pending candidates, 
 S_{\mathrm{committed}}&=2\times8\times4\times1024\times256\times2\ \mathrm{bytes}=32\ \mathrm{MiB},\\
 S_{\mathrm{candidates}}&=2\times8\times4\times256\times256\times2\ \mathrm{bytes}=8\ \mathrm{MiB}.
 \end{align}
-The factors count keys and values, modules, KV groups, records, head width and two-byte BF16 elements. RMA uses \textbf{40 MiB of KV per sequence}. A window of 1,024 positions adds at most 32\,MiB, giving a \textbf{72\,MiB local and anchor KV budget at batch one}. With the same eight attention layers, four KV heads, head width, and BF16 precision, a 256K-token full-attention cache requires $32\,\mathrm{KiB}\times262{,}144=8$\,GiB. The KV payload reduction is $1-72/8192\approx\mathbf{99.1\%}$. Table~\ref{tab:state-budget} also accounts for FP32 recurrence and auxiliary history tensors.
+The factors count keys and values, modules, KV groups, records, head width and two-byte BF16 elements. RMA uses \textbf{40 MiB of KV per sequence}. A window of 1,024 positions adds at most 32\,MiB, giving \textbf{72\,MiB of attention KV per sequence}. With the same eight attention layers, four KV heads, head width, and BF16 precision, a 256K-token full-attention cache requires $32\,\mathrm{KiB}\times262{,}144=8$\,GiB. The attention KV reduction is $1-72/8192\approx\mathbf{99.1\%}$. Table~\ref{tab:state-budget} also accounts for FP32 recurrence and auxiliary history tensors.
 \begin{table}[!htbp]
 \centering\small
 \caption{Persistent history per sequence. Attention KV is stored in BF16 and recurrent state in FP32. Every entry is fixed in size, independent of context length.}
@@ -173,9 +177,10 @@ The factors count keys and values, modules, KV groups, records, head width and t
 Component & MiB per sequence & Share\\
 \midrule
 Attention KV & 71.97 & 59.1\%\\
-\quad Committed RMA anchors & 32.00 & \\
-\quad Pending RMA candidates & 8.00 & \\
 \quad Local window (1,023 preceding positions) & 31.97 & \\
+\quad RMA & 40.00 & \\
+\qquad Committed anchors & 32.00 & \\
+\qquad Pending candidates & 8.00 & \\
 \addlinespace[3pt]
 Recurrent state & 49.50 & 40.7\%\\
 \quad FP32 recurrent matrices & 48.00 & \\
@@ -200,22 +205,3 @@ Streamed, bounded-chunk prefill gives \textbf{$O(P+N)$ total stream-processing w
 History storage grows with the number of concurrent requests $B$, not with their length. The optimized runtime implements these fixed shapes with CUDA Graphs, packed projections, fused updates, and physical sliding-window caches, and keeps each request's history in its own slot. Requests that repeat a prompt can share its prefill, but each continuation keeps its own state.
 
 Prefill chunks and resumed requests carry recurrent state, local KV, committed records, pending candidates, and positions together; Appendix~\ref{sec:streaming-execution} specifies continuation semantics.
-
-\section{Preserving reasoning through staged adaptation}
-\label{sec:training}
-
-Converting a growing-history model to constant memory requires three things: RMA must learn what to keep, the backbone must learn to use what was kept, and the converted model must keep reasoning like its source. Staged adaptation addresses them in turn.
-
-\subsection{Training stages}
-
-\textbf{M0: RMA adaptation.} The RMA modules learn to retain and retrieve information needed for later predictions.
-
-\textbf{R: joint adaptation.} RMA is trained with the recurrent and local-attention backbone so downstream layers can interpret and apply retrieved information.
-
-\textbf{S: supervised post-training.} Supervised learning develops general-purpose responses across a broad range of tasks using the adapted history mechanism.
-
-\textbf{RLVR: outcome-guided refinement.} Reinforcement learning with verifiable rewards~\cite{tulu3,deepseekr1} uses feedback on answer correctness and task completion to refine the model's generated responses.
-
-\subsection{RMA across training stages}
-
-Each stage leaves measurable evidence on the 256-context, 1,024-query memory suite (Figure~\ref{fig:memory}). After RMA adaptation (M0), EdgeRock answers 79.4\% of long-context queries. Joint adaptation (R) raises this to 96.1\% as the backbone learns to use retrieved records. Supervised post-training and RLVR then shape general responses and reasoning while query accuracy stays at 94.1\% and complete-context success at 80.1\%. The final model retains 96.3\% of its source model's AIME score (Section~\ref{sec:source-retention}).

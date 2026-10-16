@@ -32,4 +32,7 @@ preferred-citation:
     - family-names: Xu
       given-names: Hua
   year: 2026
-  url: "https://github.com/rockmatrix-ai/EdgeRock/blob/main/docs/report/EdgeRock_Technical_Report.pdf"
+  url: "https://arxiv.org/abs/2610.10118"
+  identifiers:
+    - type: doi
+      value: "10.48550/arXiv.2610.10118"

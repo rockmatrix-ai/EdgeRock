@@ -6,11 +6,13 @@
   <p>
     <a href="docs/report/EdgeRock_Technical_Report.pdf"><b>Technical Report</b></a>
     &nbsp; · &nbsp;
-    <a href="https://huggingface.co/stonehill-tech/EdgeRock"><b>Model Weights</b></a>
+    <a href="https://arxiv.org/abs/2610.10118"><b>arXiv:2610.10118</b></a>
     &nbsp; · &nbsp;
-    <a href="USAGE.md"><b>Inference Guide</b></a>
+    <a href="https://github.com/rockmatrix-ai/EdgeRock"><b>GitHub</b></a>
     &nbsp; · &nbsp;
-    <a href="#full-text-benchmark-tables"><b>Evaluation Results</b></a>
+    <a href="https://huggingface.co/rockmatrix-ai/EdgeRock"><b>Hugging Face</b></a>
+    &nbsp; · &nbsp;
+    <a href="https://modelscope.cn/models/rockmatrix/EdgeRock"><b>ModelScope</b></a>
   </p>
 </div>
 
@@ -37,7 +39,7 @@ cd EdgeRock
 python -m venv .venv
 source .venv/bin/activate
 python -m pip install ./wheels/transformers-5.7.0.dev0-py3-none-any.whl -e .
-hf download stonehill-tech/EdgeRock --local-dir checkpoints/EdgeRock-4B \
+hf download rockmatrix-ai/EdgeRock --local-dir checkpoints/EdgeRock-4B \
   --include '*.safetensors' '*.json' '*.jinja' 'tokenizer*' 'vocab*' 'merges*' \
   --exclude 'evaluation_data/*'
 cp config.json configuration_edgerock.py modeling_edgerock.py checkpoints/EdgeRock-4B/
@@ -569,7 +571,9 @@ EdgeRock-4B reaches 82.9% mean pass@1 on AIME 2024–2026, compared with 18.8% f
   author = {Ji, Huishan and Zhang, Weiming and Ye, Qirui and Xu, Jinchao and Guo, Yike and Xu, Hua},
   institution = {Rock Matrix},
   year = {2026},
-  url = {https://github.com/rockmatrix-ai/EdgeRock}
+  eprint = {2610.10118},
+  archivePrefix = {arXiv},
+  url = {https://arxiv.org/abs/2610.10118}
 }
 ```
 
