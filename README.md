@@ -18,18 +18,18 @@
 
 **EdgeRock is a family of multimodal models that deliver strong reasoning at constant memory.** EdgeRock-4B is the first open-source release, with text and image reasoning; additional model sizes are in preparation.
 
-Long reasoning grows the KV cache, consumes accelerator memory, and limits serving concurrency. On edge devices, reasoning must also share memory with perception and control. EdgeRock fixes the history budget: recurrent state summarizes context, local attention covers recent tokens, and **Rock Memory Anchors (RMA)** keep selected distant details directly retrievable.
+With full-history attention, the key–value (KV) cache grows throughout long-context inference. Longer reasoning traces leave room for fewer concurrent requests; on edge devices, that memory also supports perception and control. EdgeRock keeps persistent history fixed through recurrent state, sliding-window attention, and **Rock Memory Anchors (RMA)**: learned key–value records that preserve direct access to selected distant information.
 
-- **Strong reasoning at constant history:** EdgeRock-4B reaches 82.9% mean pass@1 on AIME 2024–2026, versus 18.8% for the strongest evaluated bounded-state baseline, RWKV-7 G1j in the 14B class. [Capability results](#strong-reasoning-within-the-bounded-state-class).
-- **Fixed-capacity KV storage:** EdgeRock-4B uses 72 MiB of attention KV per sequence and 121.76 MiB of total persistent history with FP32 recurrence and auxiliary state. At 256K context, its BF16 attention KV is **99.1% smaller than Qwen3.5-4B's**. [Memory breakdown](#constant-history-and-gpu-memory).
-- **Sustained inference:** On one Hopper 80GB GPU, EdgeRock-4B sustains **233.7 decode tokens/s** at batch size 1 with 128K input and 128K output. At 32K input and 32K output, it delivers **5.65× Qwen3.5-4B's end-to-end output-token throughput**, using each model's best measured batch size. [Runtime results](#inference-efficiency).
-- **Text and image reasoning:** EdgeRock-4B reaches **84.9% mean answer-level accuracy** across six visual benchmarks, retaining **95.3% of Qwen3.5-4B's mean accuracy**. [Visual results](#visual-reasoning).
+- **82.9% AIME pass@1 at constant memory.** EdgeRock-4B averages 82.9% across AIME 2024–2026, versus 18.8% for RWKV-7 G1j in the 14B class, the strongest evaluated bounded-state baseline on AIME.
+- **O(1) attention-KV storage.** EdgeRock-4B keeps a fixed 72 MiB KV capacity per sequence, **99.1% less** than Qwen3.5-4B at 256K context with BF16 KV.
+- **5.65× higher batch throughput.** At 32K input + 32K output on one Hopper 80GB GPU, EdgeRock-4B delivers 5.65× Qwen3.5-4B's end-to-end output throughput at each model's best measured batch size.
+- **Text and image reasoning.** EdgeRock-4B reaches **84.9%** mean answer-level accuracy across six visual benchmarks, retaining **95.3%** of Qwen3.5-4B's mean accuracy.
 
 ![EdgeRock-4B: AIME reasoning, constant attention-KV storage, and Hopper 80GB inference throughput](assets/hero_capability.png)
 
-Throughput counts **output tokens only**; end-to-end elapsed time includes prefill. Runtime comparisons use BF16 weights/KV and ordinary autoregressive decoding, with FP32 recurrence for EdgeRock-4B and Qwen3.5-4B. The full tables below separate bounded-state models, source-model retention, and compact-model comparisons.
+Results below come from the [EdgeRock technical report](docs/report/EdgeRock_Technical_Report.pdf). Throughput counts **output tokens only**; end-to-end elapsed time includes prefill. Runtime comparisons use BF16 weights/KV and ordinary autoregressive decoding, with FP32 recurrence for EdgeRock-4B and Qwen3.5-4B.
 
-[Architecture](#how-rock-memory-anchors-work) · [Capability](#capability) · [Inference efficiency](#inference-efficiency) · [Full benchmark tables](#full-text-benchmark-tables) · [FAQ](#frequently-asked-questions) · [Citation](#citation)
+[Quick start](#quick-start) · [Architecture](#how-rock-memory-anchors-work) · [Reasoning](#capability) · [Throughput and memory](#inference-efficiency) · [All benchmark tables](#full-text-benchmark-tables) · [FAQ](#frequently-asked-questions) · [Citation](#citation)
 
 ## Quick start
 
@@ -47,11 +47,11 @@ python run.py demo --model checkpoints/EdgeRock-4B \
   --prompt 'Solve 17 × 23, explaining your reasoning.' --max-new-tokens 2048
 ```
 
-The portable backend provides PyTorch execution on CPU and CUDA. The optimized Hopper CUDA path requires the additional dependencies in the [inference guide](USAGE.md). The **fast** profile preserves BF16 weights/KV and FP32 recurrent state; it changes execution, not precision.
+EdgeRock-4B runs through the portable PyTorch backend on CPU or CUDA. For the optimized Hopper path, follow the [inference guide](USAGE.md); the **fast** profile uses fused BF16 operations and CUDA Graphs while preserving BF16 weights/KV and FP32 recurrent state.
 
 ## How Rock Memory Anchors work
 
-A **memory anchor** is a learned key–value record stored in a fixed-capacity bank and retrieved by later queries after its source information leaves the local attention window. The writer determines what a record represents, admission determines which records remain, and retrieval determines how stored information contributes to the current computation.
+In EdgeRock, a **memory anchor** is a learned key–value record that later queries can retrieve after its source information leaves the local attention window. Rock Memory Anchors keep these records in a fixed-capacity bank. The writer creates records, admission selects which to retain, and query-dependent retrieval brings stored information into the current computation.
 
 ![EdgeRock-4B architecture: recurrent state, sliding-window attention, and Rock Memory Anchors](assets/architecture_overview.png)
 
@@ -68,15 +68,15 @@ EdgeRock-4B converts the eight full-attention layers of its Qwen3.5-4B backbone 
 | RMA anchor bank | Retain individually retrievable distant records | 1,024 records per KV group |
 | Pending candidates | Collect records for the next admission update | 256 positions |
 
-A learned writer produces dedicated key–value records. Every 256 tokens, admission retains the highest-priority records separately in each of four KV groups. Queries read the **committed** bank; newly selected records become visible in the next block. Retained records remain separate and unchanged. A query-dependent read and signed gate integrate retrieved information alongside local attention.
+Every 256 tokens, EdgeRock selects up to 1,024 records from the committed bank and new candidates in each of four KV groups. Queries read the **committed bank**; selections become visible in the next block. Each retained record stays individually addressable until replaced, and a query-dependent signed gate combines retrieved information with local attention.
 
-Every component of persistent history has fixed capacity. History storage is **O(1) in sequence length**, and bounded history access gives **O(N) generation work** for N output tokens at fixed model and memory dimensions. Total GPU memory also includes model weights, input/output buffers, CUDA Graphs, and workspace.
+EdgeRock fixes the capacity of every history component, giving **O(1) persistent history in sequence length** and **O(N) generation work** for N output tokens at fixed model and memory dimensions. Total GPU allocation includes this history, model weights, input/output buffers, CUDA Graphs, and workspace.
 
 ## Capability
 
 ### Strong reasoning within the bounded-state class
 
-EdgeRock-4B brings strong mathematical reasoning to constant memory: **82.9% mean pass@1 on AIME 2024–2026**, versus 18.8% for the strongest evaluated bounded-state baseline on AIME. Across all 29 text benchmarks, EdgeRock-4B leads on 24 and reaches a **77.2%** equal-weight mean, 23.8 percentage points above AHN-GDN Qwen2.5 14B.
+EdgeRock-4B reaches **82.9% mean pass@1 on AIME 2024–2026** with fixed persistent history; RWKV-7 G1j 13.3B, the strongest bounded-state baseline on AIME, reaches 18.8%. Across 29 text benchmarks, EdgeRock-4B leads on 24 and averages **77.2%**, compared with 53.4% for AHN-GDN Qwen2.5 14B.
 
 ![Bounded-state capability: all-benchmark and AIME means for 17 models](assets/bounded_comparison.png)
 
@@ -102,11 +102,13 @@ EdgeRock-4B brings strong mathematical reasoning to constant memory: **82.9% mea
 | xLSTM 7B | 16.0 | 0.0 | 25.0 | 4.6 | 2.2 | 34.0 |
 | ARWKV-R1 1.5B | 9.9 | 0.0 | 13.6 | 7.5 | 0.3 | 11.1 |
 
-### Competitive compact-model capability
+### EdgeRock vs Qwen, MiniCPM, and LFM
 
-EdgeRock-4B combines **constant persistent history** with competitive mathematics, knowledge, coding, and instruction following. It exceeds LFM2.5-2.6B on 28 of 29 text benchmarks. The comparison models below have growing history. AIME is the equal-weight 2024–2026 mean; bold marks column maxima.
+EdgeRock-4B brings constant-history reasoning into the range of compact models: **82.9%** mean AIME pass@1, compared with 86.1% for Qwen3.5-4B, 87.8% for MiniCPM5-2B, and 56.2% for LFM2.5-2.6B. EdgeRock-4B also leads this compact-model comparison on MMLU-Pro and SuperGPQA, and exceeds LFM2.5-2.6B on 28 of 29 text benchmarks.
 
-| Model | AIME | MMLU-Pro | SuperGPQA | GPQA-Diamond | LiveCodeBench v6 | IFEval |
+EdgeRock-4B retains fixed history; the comparison models use growing history. Scores are percentages, AIME averages 2024–2026, and bold marks column maxima.
+
+| Model | AIME mean | MMLU-Pro | SuperGPQA | GPQA-Diamond | LiveCodeBench v6 | IFEval |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 | **EdgeRock-4B** | 82.9 | **79.8** | **60.0** | 64.6 | 61.6 | 88.0 |
 | Qwen3.5-4B | 86.1 | 77.7 | 52.8 | **77.3** | 75.7 | 89.6 |
@@ -122,7 +124,7 @@ EdgeRock-4B retains **96.3%** of its Qwen3.5-4B backbone's AIME mean after repla
 
 ![Capability after conversion: EdgeRock-4B and Qwen3.5-4B across all 29 text benchmarks](assets/backbone_delta.png)
 
-Bars show EdgeRock-4B minus Qwen3.5-4B in percentage points, ordered from largest to smallest. The tables give absolute scores; bold marks the higher score in each paired comparison. Retained is EdgeRock-4B's score as a percentage of Qwen3.5-4B's.
+The figure orders the 29 benchmarks by EdgeRock-4B minus Qwen3.5-4B in percentage points. Tables report absolute scores (%); bold marks the higher score. Retained is EdgeRock-4B's score divided by Qwen3.5-4B's, expressed as a percentage.
 
 | Benchmark | EdgeRock-4B | Qwen3.5-4B | Retained (%) |
 | --- | ---: | ---: | ---: |
@@ -135,7 +137,7 @@ Bars show EdgeRock-4B minus Qwen3.5-4B in percentage points, ordered from larges
 | MATH-500 | 97.5 | **98.0** | 99.5 |
 | AIME three-year mean | 82.9 | **86.1** | 96.3 |
 
-#### Full source-model comparison
+#### EdgeRock-4B vs Qwen3.5-4B: all 29 benchmarks
 
 | Benchmark | EdgeRock-4B | Qwen3.5-4B |
 | --- | ---: | ---: |
@@ -185,7 +187,7 @@ Answer-level accuracy (%) on six visual benchmarks. Retained is EdgeRock-4B's sc
 | AI2D | 80.0 | **87.0** | 92.0 |
 | Equal-weight mean | 84.9 | **89.1** | 95.3 |
 
-MME answer accuracy and standard MME points measure different aspects of performance. Standard MME scores are shown separately below.
+**Standard MME scores (benchmark points):**
 
 | MME metric | EdgeRock-4B | Qwen3.5-4B |
 | --- | ---: | ---: |
@@ -195,11 +197,11 @@ MME answer accuracy and standard MME points measure different aspects of perform
 
 ### Distant memory that reasoning can use
 
-Across 256 contexts of 16K–130,000 input tokens, EdgeRock-4B answers **94.1%** of distant-memory queries and gets all four answers correct in **80.1%** of contexts. The evaluation covers retrieval, state updates, cross-document combination, and variable binding.
+EdgeRock-4B answers **94.1%** of distant-memory queries across 256 contexts of 16K–130,000 input tokens, versus **0.4%** with all eight RMA modules disabled. It answers all four queries correctly in **80.1%** of contexts. The tasks test retrieval, state updates, cross-document combination, and variable binding.
 
 ![Distant-memory reasoning across adaptation stages and with RMA enabled or disabled](assets/memory_diagnostic.png)
 
-**Adaptation stages.** Query accuracy measures individual answers; complete-context success requires all four answers to be correct. Each stage uses the same 256-context, 1,024-query evaluation.
+**Memory across adaptation stages.** EdgeRock learns distant retrieval during RMA adaptation and retains it through joint adaptation, supervised fine-tuning, and reinforcement learning with verifiable rewards (RLVR). Each stage uses the same 256 contexts and 1,024 queries; complete-context success requires four correct answers.
 
 | Adaptation stage | Query accuracy (%) | All four correct (%) |
 | --- | ---: | ---: |
@@ -208,7 +210,7 @@ Across 256 contexts of 16K–130,000 input tokens, EdgeRock-4B answers **94.1%**
 | Supervised fine-tuning (S) | 93.8 | 82.4 |
 | Reinforcement learning (RLVR) | 94.1 | 80.1 |
 
-**RMA contribution.** Both settings retain the final model's recurrent backbone and local attention. Enabling all eight RMA modules restores access to distant evidence.
+**RMA contribution in the final model.** Enabling the eight RMA modules raises correct distant-memory answers from 4 to 964 out of 1,024. The recurrent backbone and local attention remain active in both settings.
 
 | Final-model setting | Correct queries / total | Query accuracy (%) | Complete contexts / total | All four correct (%) |
 | --- | ---: | ---: | ---: | ---: |
@@ -234,13 +236,15 @@ Across 256 contexts of 16K–130,000 input tokens, EdgeRock-4B answers **94.1%**
 
 ## Inference efficiency
 
-All results below use one **Hopper 80GB GPU**, BF16 weights and KV, ordinary autoregressive decoding, and GPU-resident state. EdgeRock-4B and Qwen3.5-4B use FP32 GDN recurrence. EdgeRock combines CUDA Graphs with fused BF16 operations; shared storage for original and packed projections removes 4.95 GiB of duplicate weights and enables batch size 512 at unchanged history capacity.
+EdgeRock-4B turns fixed history into serving capacity: **512 concurrent long-generation sequences on one Hopper 80GB GPU**. The comparisons below use BF16 weights and KV, ordinary autoregressive decoding, and GPU-resident state; EdgeRock-4B and Qwen3.5-4B use FP32 GDN recurrence. CUDA Graphs, fused BF16 operations, and shared projection storage reduce execution overhead while preserving precision and history capacity.
 
-### Single-request decoding and serving throughput
+### Single-request speed and best-batch throughput
 
 ![Long-context inference: single-request decoding and best-batch output-token throughput](assets/runtime_scaling.png)
 
-**Single request: 128K input + 128K output, batch size = 1.** Decode rate excludes prefill and measures subsequent output tokens after the first token, including sampling and state updates. EdgeRock-4B sustains **233.7 tokens/s**, **1.54×** Qwen3.5-4B's rate.
+#### Single-request decoding
+
+EdgeRock-4B sustains **233.7 decode tokens/s**, versus 151.3 for Qwen3.5-4B (**1.54×**), with **128K input + 128K output at batch size 1 on one Hopper 80GB GPU**. Decode rate counts output tokens after the first token and includes sampling and state updates; timing excludes prefill.
 
 | Model | Decode tokens/s |
 | --- | ---: |
@@ -252,7 +256,11 @@ All results below use one **Hopper 80GB GPU**, BF16 weights and KV, ordinary aut
 
 At the same 256K total length with **254K input + 2K output**, EdgeRock-4B reaches **226.6** decode tokens/s versus Qwen3.5-4B's 133.9 (**1.69×**).
 
-**Best-batch serving: 32K output.** Cells give output tokens/s and the best measured batch size in parentheses. The numerator counts **output tokens only**; elapsed time **includes prefill**. At 32K input + 32K output, EdgeRock-4B delivers **5.65×** Qwen3.5-4B's end-to-end output throughput.
+#### Best-batch output throughput
+
+EdgeRock-4B reaches **10,669 output tokens/s at batch size 512**, versus Qwen3.5-4B's 1,889 at batch size 64, for **5.65× higher throughput** at **32K input + 32K output on one Hopper 80GB GPU**. Each model uses its best measured batch.
+
+All columns use 32K output. Cells give output tokens/s with batch size in parentheses. End-to-end throughput divides **output tokens only** by elapsed generation time, **including prefill**.
 
 | Model | 4K input | 8K input | 16K input | 32K input |
 | --- | ---: | ---: | ---: | ---: |
@@ -262,13 +270,13 @@ At the same 256K total length with **254K input + 2K output**, EdgeRock-4B reach
 | MiniCPM5-2B | 3,152 (64) | 2,938 (64) | 2,575 (32) | 2,117 (32) |
 | LFM2.5-2.6B | 1,673 (64) | 1,771 (64) | 1,695 (32) | 1,727 (64) |
 
-Across these four workloads, the mean throughput ratio is **4.36×** relative to Qwen3.5-4B and **6.34×** relative to LFM2.5-2.6B. Each model uses its best measured batch size at each input length.
+Across 4K, 8K, 16K, and 32K inputs with 32K output, EdgeRock-4B averages **4.36×** Qwen3.5-4B's and **6.34×** LFM2.5-2.6B's output throughput at each model's best measured batch size.
 
 ### Concurrency scaling
 
 ![Concurrency scaling: aggregate and per-sequence decode rates at batch sizes 32–512](assets/batch_scaling.png)
 
-EdgeRock-4B runs **512 concurrent sequences** across all 16 input/output pairs formed from 4K, 8K, 16K, and 32K lengths. Weighted decode throughput divides pooled output tokens after the first token by pooled decode time. Per-sequence rate divides aggregate throughput by batch size. Memory columns report the maximum over the corresponding workloads.
+EdgeRock-4B reaches **11,038 weighted decode tokens/s** across all 16 input/output pairs formed from 4K, 8K, 16K, and 32K lengths at batch size 512 on one Hopper 80GB GPU. This gives **21.6 tokens/s per active sequence**. Weighted throughput divides pooled subsequent output tokens by pooled decode time; memory columns report the peak across these workloads.
 
 | Batch size | Weighted decode tokens/s | Per-sequence tokens/s | Peak allocated GiB | Peak reserved GiB |
 | ---: | ---: | ---: | ---: | ---: |
@@ -282,7 +290,7 @@ EdgeRock-4B runs **512 concurrent sequences** across all 16 input/output pairs f
 
 ### Short-context decoding
 
-**4K input + 2K output.** Decode rate excludes prefill. The same BF16 weights/KV and FP32 recurrence apply from batch size 1 through 512.
+For **4K input + 2K output on one Hopper 80GB GPU**, EdgeRock-4B decodes at **229.4 tokens/s at batch size 1** and **11,047 tokens/s at batch size 512**. Rates exclude prefill; all batches use BF16 weights/KV and FP32 recurrence.
 
 | Batch size | Decode tokens/s | Per-sequence tokens/s | Peak allocated GiB |
 | ---: | ---: | ---: | ---: |
@@ -303,14 +311,14 @@ EdgeRock-4B runs **512 concurrent sequences** across all 16 input/output pairs f
 
 ![GPU memory scaling: concurrency and input length at fixed batch sizes](assets/memory_capacity.png)
 
-EdgeRock-4B's attention KV stays **O(1) in sequence length**. A fixed 72 MiB capacity per sequence is **99.1% smaller** than Qwen3.5-4B's full-attention KV at 256K context. The following values are configuration-derived BF16 attention-KV capacities, excluding model weights and recurrent state.
+EdgeRock-4B keeps attention-KV capacity at **72 MiB per sequence**, independent of sequence length. At 256K context, Qwen3.5-4B requires 8 GiB of attention KV at the same BF16 precision: EdgeRock uses **99.1% less**. These are configuration-derived KV capacities; the complete persistent-history budget follows.
 
 | Model | 32K context (MiB) | 64K context (MiB) | 128K context (MiB) | 256K context (MiB) | History growth |
 | --- | ---: | ---: | ---: | ---: | --- |
 | **EdgeRock-4B** | **72** | **72** | **72** | **72** | **O(1)** |
 | Qwen3.5-4B | 1,024 | 2,048 | 4,096 | 8,192 | O(N) |
 
-**Persistent history per sequence.** All entries have fixed capacity; the local ring holds 1,023 preceding positions while the decoder supplies the current token.
+**Complete persistent history: 121.76 MiB per sequence.** This includes attention KV, FP32 recurrence, and metadata. During decode, the local ring stores 1,023 preceding positions and the decoder supplies the current token.
 
 | Component | MiB per sequence |
 | --- | ---: |
@@ -322,19 +330,19 @@ EdgeRock-4B's attention KV stays **O(1) in sequence length**. A fixed 72 MiB cap
 | Metadata | 0.29 |
 | **Total persistent history** | **121.76** |
 
-Measured GPU allocation includes model weights, history, input/output buffers, and execution workspace. A single 128K-input/128K-output request peaks at **16.02 GiB**; the batch-size-512 long-generation sweep peaks at **73.26 GiB**. The figure shows concurrency scaling at 4K input + 2K output and allocation across 4K–32K input with 32K output.
+**Measured GPU allocation.** On one Hopper 80GB GPU, EdgeRock-4B peaks at **16.02 GiB** for 128K input + 128K output at batch size 1 and **73.26 GiB** across the 16 long-generation workloads at batch size 512. These allocations include weights, history, input/output buffers, and workspace. The figure shows how allocation varies with concurrency and input length.
 
 **Runtime protocol.** 1K = 1,024 tokens. EdgeRock configurations use three independent runs; per-workload values are medians, and weighted batch rates pool the 16 length pairs and three repetitions. Timing excludes loading, warmup, tokenization, and text decoding. Workloads use synthetic tokens, a separate 256-token warmup, EOS disabled, temperature 1.0, top-k 20, top-p 0.95, and presence penalty 1.5. In the batch grid, eight continuations share each prompt and retain independent histories. Batch size denotes submitted requests; EdgeRock maintains target concurrency, while vLLM schedules within its cache budget.
 
 ## Full text benchmark tables
 
-All 29 text benchmarks are expanded below, with **EdgeRock-4B in every table**. Scores use each benchmark's primary metric on a 0–100 scale. **Bold marks the highest score within each comparison column, including ties.** Bounded-state and growing-history comparisons remain separate.
+EdgeRock-4B is compared with **16 bounded-state baselines** and **11 growing-history models** across all 29 text benchmarks. Scores use each benchmark's primary metric on a 0–100 scale; **bold marks column maxima, including ties**. AIME reports mean pass@1, and DROP reports F1.
 
 ### Bounded-state comparison: all 29 benchmarks
 
 The comparison contains EdgeRock-4B and 16 bounded-state baselines. Phi-3 Medium uses a configured 2,047-token attention window.
 
-#### Mathematics
+#### Mathematics: bounded-state models
 
 | Model | GSM8K | MATH-500 | AIME 2024 | AIME 2025 | AIME 2026 | HMMT Feb 2025 | HMMT Nov 2025 | HMMT Feb 2026 |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -356,7 +364,7 @@ The comparison contains EdgeRock-4B and 16 bounded-state baselines. Phi-3 Medium
 | AHN-GDN Qwen2.5 14B | 93.6 | 80.0 | 13.8 | 10.0 | 10.4 | 7.5 | 10.0 | 4.9 |
 | Phi-3 Medium 4K Instruct | 85.3 | 49.0 | 3.3 | 3.3 | 0.0 | 6.7 | 2.5 | 3.0 |
 
-#### Knowledge and science
+#### Knowledge and science: bounded-state models
 
 | Model | MMLU | MMLU-Pro | MMLU-Redux | CMMLU | C-Eval | GPQA-Diamond | SuperGPQA |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -378,7 +386,7 @@ The comparison contains EdgeRock-4B and 16 bounded-state baselines. Phi-3 Medium
 | AHN-GDN Qwen2.5 14B | 77.2 | 63.5 | 83.5 | **75.0** | 74.2 | 40.9 | 35.5 |
 | Phi-3 Medium 4K Instruct | 76.3 | 54.0 | 81.4 | 53.3 | 51.3 | 26.8 | 25.6 |
 
-#### Commonsense and reasoning
+#### Commonsense and reasoning: bounded-state models
 
 | Model | WinoGrande | HellaSwag | ARC-C | ARC-E | BBH | BBEH |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -400,7 +408,7 @@ The comparison contains EdgeRock-4B and 16 bounded-state baselines. Phi-3 Medium
 | AHN-GDN Qwen2.5 14B | 74.0 | 67.9 | 91.5 | 94.0 | 52.0 | 5.3 |
 | Phi-3 Medium 4K Instruct | **79.6** | 74.0 | 89.8 | 95.3 | 53.3 | 3.1 |
 
-#### Code and instruction following
+#### Code and instruction following: bounded-state models
 
 | Model | HumanEval | MBPP | LiveCodeBench v6 | IFEval | IFBench |
 | --- | ---: | ---: | ---: | ---: | ---: |
@@ -422,7 +430,7 @@ The comparison contains EdgeRock-4B and 16 bounded-state baselines. Phi-3 Medium
 | AHN-GDN Qwen2.5 14B | 75.6 | 68.6 | 32.9 | 77.4 | 33.3 |
 | Phi-3 Medium 4K Instruct | 73.8 | 59.4 | 19.1 | 61.4 | 22.0 |
 
-#### Reading and multi-step reasoning
+#### Reading and multi-step reasoning: bounded-state models
 
 | Model | DROP F1 | MuSR | LogiQA2 |
 | --- | ---: | ---: | ---: |
@@ -448,7 +456,7 @@ The comparison contains EdgeRock-4B and 16 bounded-state baselines. Phi-3 Medium
 
 EdgeRock-4B retains constant persistent history; the eleven comparison models retain history that grows with sequence length.
 
-#### Mathematics
+#### Mathematics: EdgeRock vs growing-history models
 
 | Model | GSM8K | MATH-500 | AIME 2024 | AIME 2025 | AIME 2026 | HMMT Feb 2025 | HMMT Nov 2025 | HMMT Feb 2026 |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -465,7 +473,7 @@ EdgeRock-4B retains constant persistent history; the eleven comparison models re
 | Granite4.2-8B | 94.4 | **98.0** | 88.3 | **87.9** | **91.7** | **81.7** | **86.7** | **73.9** |
 | MiniCPM4.1-8B | 93.6 | 96.4 | 77.1 | 70.0 | 70.8 | 58.3 | 59.6 | 49.2 |
 
-#### Knowledge and science
+#### Knowledge and science: EdgeRock vs growing-history models
 
 | Model | MMLU | MMLU-Pro | MMLU-Redux | CMMLU | C-Eval | GPQA-Diamond | SuperGPQA |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -482,7 +490,7 @@ EdgeRock-4B retains constant persistent history; the eleven comparison models re
 | Granite4.2-8B | 78.6 | 72.0 | 86.3 | 55.1 | 58.4 | 61.6 | 45.7 |
 | MiniCPM4.1-8B | 82.7 | 67.0 | 87.8 | 80.2 | 79.0 | 51.5 | 40.6 |
 
-#### Commonsense and reasoning
+#### Commonsense and reasoning: EdgeRock vs growing-history models
 
 | Model | WinoGrande | HellaSwag | ARC-C | ARC-E | BBH | BBEH |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -499,7 +507,7 @@ EdgeRock-4B retains constant persistent history; the eleven comparison models re
 | Granite4.2-8B | 76.2 | 63.1 | 90.9 | 94.6 | **88.9** | 31.5 |
 | MiniCPM4.1-8B | 78.2 | 49.8 | 93.4 | 97.4 | 86.6 | 14.0 |
 
-#### Code and instruction following
+#### Code and instruction following: EdgeRock vs growing-history models
 
 | Model | HumanEval | MBPP | LiveCodeBench v6 | IFEval | IFBench |
 | --- | ---: | ---: | ---: | ---: | ---: |
@@ -516,7 +524,7 @@ EdgeRock-4B retains constant persistent history; the eleven comparison models re
 | Granite4.2-8B | 96.3 | **95.4** | **85.6** | **94.6** | **77.0** |
 | MiniCPM4.1-8B | **98.2** | 92.2 | 70.4 | 73.4 | 23.7 |
 
-#### Reading and multi-step reasoning
+#### Reading and multi-step reasoning: EdgeRock vs growing-history models
 
 | Model | DROP F1 | MuSR | LogiQA2 |
 | --- | ---: | ---: | ---: |
@@ -537,21 +545,21 @@ EdgeRock-4B retains constant persistent history; the eleven comparison models re
 
 Most tasks report accuracy; DROP uses F1 in the 29-benchmark mean. The aggregate weights benchmarks equally after each benchmark’s required subject or subtask aggregation. AIME pools retained responses within each edition and weights the three editions equally. Repetition counts vary by model and benchmark.
 
-EdgeRock text evaluation uses temperature 0.6, top-p 0.95, top-k 20, presence penalty 0, seed 20260923, and a 131,072-token response cap. It uses 64 independent responses per item for benchmarks with fewer than 100 questions, 16 for 100–10,000 questions, and one above 10,000. Visual and memory evaluations use the reference arithmetic path. See Appendix A of the report for verification and scoring details.
+EdgeRock text evaluation uses temperature 0.6, top-p 0.95, top-k 20, presence penalty 0, seed 20260923, and a 131,072-token response cap. It uses 64 independent responses per item for benchmarks with fewer than 100 questions, 16 for 100–10,000 questions, and one above 10,000. Visual and memory evaluations use the reference arithmetic path. Appendix A of the [technical report](docs/report/EdgeRock_Technical_Report.pdf) gives the scoring and verification procedures.
 
 ## Frequently asked questions
 
-### What stays constant as context grows?
+### What does O(1) memory mean for EdgeRock?
 
-EdgeRock-4B's **persistent history per sequence** stays constant: recurrent state, the 1,024-position local window, the 1,024-record anchor bank per KV group, and pending candidates all have fixed capacity. Attention KV occupies 72 MiB per sequence; total persistent history occupies 121.76 MiB with FP32 recurrence and auxiliary state. Model weights and execution buffers are accounted for separately in the [memory breakdown above](#constant-history-and-gpu-memory).
+EdgeRock-4B uses a fixed amount of **persistent history per sequence**, independent of sequence length at fixed cache capacities. That history includes recurrence, local KV, RMA records, pending candidates, and metadata. The report configuration uses 121.76 MiB per sequence. Total GPU allocation also includes model weights and execution buffers; it scales with concurrency.
 
-### How do Rock Memory Anchors preserve distant information?
+### Why does fixed history matter for agents and robots?
 
-Rock Memory Anchors retain selected information as individually retrievable key–value records after the source tokens leave local attention. A learned writer creates records, admission selects records for the fixed-capacity bank, and later queries retrieve them. Reads use the committed bank; updates take effect at the next block. EdgeRock-4B achieves 94.1% query accuracy in the [distant-memory evaluation](#distant-memory-that-reasoning-can-use).
+Agents can generate long reasoning traces, while robots and other edge devices share memory with perception and control. EdgeRock fixes the history budget before generation starts, making that part of memory demand predictable. In server inference, the same design leaves capacity for more concurrent requests, demonstrated by EdgeRock-4B's 512-sequence long-generation results above.
 
-### How does EdgeRock-4B compare with other reasoning models?
+### Where can I download and run EdgeRock-4B?
 
-EdgeRock-4B reaches 82.9% mean pass@1 on AIME 2024–2026, compared with 18.8% for the strongest evaluated bounded-state baseline. Relative to its Qwen3.5-4B backbone, EdgeRock-4B retains 96.3% of the AIME mean while making persistent history constant. Comparisons with MiniCPM5-2B, LFM2.5-2.6B, and other compact models show capability across mathematics, knowledge, coding, and instruction following. The tables above present these three comparison groups separately.
+Rock Matrix publishes EdgeRock-4B weights on [Hugging Face](https://huggingface.co/rockmatrix-ai/EdgeRock) and [ModelScope](https://modelscope.cn/models/rockmatrix/EdgeRock). This repository contains the model implementation and inference code; the [quick start](#quick-start) runs a text-generation example. Runtime code uses the [Apache-2.0 license](LICENSE), and weights use the [EdgeRock model license](MODEL_LICENSE).
 
 ## Repository guide
 
