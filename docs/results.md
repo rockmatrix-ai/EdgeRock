@@ -6,7 +6,7 @@ EdgeRock-4B combines strong mathematical reasoning with constant-size persistent
 
 ## Bounded-state models
 
-EdgeRock-4B reaches 82.9% mean pass@1 on AIME 2024–2026, compared with 18.8% for RWKV-7 G1j 13.3B, the strongest evaluated bounded-state baseline on AIME. The fixed-capacity comparison covers EdgeRock-4B and 16 bounded-state models. Scores use each benchmark’s primary metric on a 0–100 scale. Bold marks column maxima, including ties.
+EdgeRock-4B reaches 82.9% mean pass@1 on AIME 2024–2026, compared with 18.8% for RWKV-7 G1j 13.3B, the strongest evaluated bounded-state baseline on AIME. The fixed-capacity comparison covers EdgeRock-4B and 16 bounded-state models. Phi-3 Medium uses a configured 2,047-token attention window. Scores use each benchmark’s primary metric on a 0–100 scale. Bold marks column maxima, including ties.
 
 ### Mathematics
 
@@ -138,23 +138,60 @@ EdgeRock-4B retains 96.3% of Qwen3.5-4B’s AIME 2024–2026 mean after conversi
 
 | Benchmark | EdgeRock-4B | Qwen3.5-4B | Retained (%) |
 | --- | ---: | ---: | ---: |
-| AIME 2024 | 86.7 | 89.6 | 96.8 |
-| AIME 2025 | 77.4 | 80.8 | 95.8 |
-| AIME 2026 | 84.6 | 87.9 | 96.2 |
-| HMMT Feb 2025 | 71.8 | 74.6 | 96.2 |
-| HMMT Nov 2025 | 69.8 | 78.3 | 89.1 |
-| HMMT Feb 2026 | 63.6 | 65.9 | 96.5 |
-| MATH-500 | 97.5 | 98.0 | 99.5 |
-| AIME three-year mean | 82.9 | 86.1 | 96.3 |
+| AIME 2024 | 86.7 | **89.6** | 96.8 |
+| AIME 2025 | 77.4 | **80.8** | 95.8 |
+| AIME 2026 | 84.6 | **87.9** | 96.2 |
+| HMMT Feb 2025 | 71.8 | **74.6** | 96.2 |
+| HMMT Nov 2025 | 69.8 | **78.3** | 89.1 |
+| HMMT Feb 2026 | 63.6 | **65.9** | 96.5 |
+| MATH-500 | 97.5 | **98.0** | 99.5 |
+| AIME three-year mean | 82.9 | **86.1** | 96.3 |
+
+### All 29 text benchmarks
+
+Bold marks the higher score in each paired comparison.
+
+| Benchmark | EdgeRock-4B | Qwen3.5-4B |
+| --- | ---: | ---: |
+| GSM8K | 94.5 | **94.8** |
+| MATH-500 | 97.5 | **98.0** |
+| AIME 2024 | 86.7 | **89.6** |
+| AIME 2025 | 77.4 | **80.8** |
+| AIME 2026 | 84.6 | **87.9** |
+| HMMT Feb 2026 | 63.6 | **65.9** |
+| MMLU | **88.2** | 85.2 |
+| MMLU-Pro | **79.8** | 77.7 |
+| MMLU-Redux | **92.0** | 89.8 |
+| CMMLU | 73.3 | **83.9** |
+| C-Eval | 74.6 | **84.0** |
+| GPQA-Diamond | 64.6 | **77.3** |
+| SuperGPQA | **60.0** | 52.8 |
+| WinoGrande | 77.9 | **87.1** |
+| HellaSwag | 64.9 | **80.6** |
+| ARC-C | 95.5 | **96.8** |
+| ARC-E | 98.0 | **98.4** |
+| BBH | 85.4 | **86.2** |
+| BBEH | 28.9 | **34.6** |
+| HumanEval | **96.7** | 86.0 |
+| MBPP | **87.8** | 71.0 |
+| LiveCodeBench v6 | 61.6 | **75.7** |
+| IFEval | 88.0 | **89.6** |
+| IFBench | **65.3** | 60.3 |
+| DROP | **77.2** | 76.0 |
+| MuSR | 60.4 | **64.9** |
+| LogiQA2 | 72.2 | **82.2** |
+| HMMT Feb 2025 | 71.8 | **74.6** |
+| HMMT Nov 2025 | 69.8 | **78.3** |
 
 ## Growing-history models
 
-These eleven models retain history that grows with sequence length. Their capability results place EdgeRock among compact releases; the source-model comparison separately measures retention.
+EdgeRock-4B is compared with eleven models whose history grows with sequence length. Every table includes EdgeRock-4B for direct comparison. Scores are on a 0–100 scale; bold marks the highest score in each column, including ties.
 
 ### Mathematics
 
 | Model | GSM8K | MATH-500 | AIME 2024 | AIME 2025 | AIME 2026 | HMMT Feb 2025 | HMMT Nov 2025 | HMMT Feb 2026 |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| **EdgeRock-4B** | 94.5 | 97.5 | 86.7 | 77.4 | 84.6 | 71.8 | 69.8 | 63.6 |
 | Qwen3.5-4B | **94.8** | **98.0** | **89.6** | 80.8 | 87.9 | 74.6 | 78.3 | 65.9 |
 | Gemma4-E2B-it | 90.1 | 78.8 | 38.3 | 33.8 | 33.8 | 21.7 | 17.5 | 20.1 |
 | MiniCPM5-2B | 93.6 | 97.0 | 87.5 | 85.4 | 90.4 | 76.7 | 74.6 | 63.3 |
@@ -171,7 +208,8 @@ These eleven models retain history that grows with sequence length. Their capabi
 
 | Model | MMLU | MMLU-Pro | MMLU-Redux | CMMLU | C-Eval | GPQA-Diamond | SuperGPQA |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| Qwen3.5-4B | **85.2** | **77.7** | **89.8** | **83.9** | **84.0** | **77.3** | **52.8** |
+| **EdgeRock-4B** | **88.2** | **79.8** | **92.0** | 73.3 | 74.6 | 64.6 | **60.0** |
+| Qwen3.5-4B | 85.2 | 77.7 | 89.8 | **83.9** | **84.0** | **77.3** | 52.8 |
 | Gemma4-E2B-it | 72.2 | 47.0 | 78.2 | 60.2 | 61.2 | 46.5 | 34.1 |
 | MiniCPM5-2B | 79.6 | 65.3 | 85.3 | 79.2 | 78.3 | 67.7 | 40.9 |
 | LFM2.5-2.6B | 75.3 | 59.9 | 81.7 | 57.2 | 59.5 | 58.2 | 27.1 |
@@ -187,6 +225,7 @@ These eleven models retain history that grows with sequence length. Their capabi
 
 | Model | WinoGrande | HellaSwag | ARC-C | ARC-E | BBH | BBEH |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| **EdgeRock-4B** | 77.9 | 64.9 | 95.5 | 98.0 | 85.4 | 28.9 |
 | Qwen3.5-4B | **87.1** | **80.6** | **96.8** | **98.4** | 86.2 | **34.6** |
 | Gemma4-E2B-it | 63.2 | 50.9 | 89.2 | 94.8 | 80.3 | 11.6 |
 | MiniCPM5-2B | 69.8 | 52.2 | 91.9 | 97.0 | 82.1 | 25.4 |
@@ -203,6 +242,7 @@ These eleven models retain history that grows with sequence length. Their capabi
 
 | Model | HumanEval | MBPP | LiveCodeBench v6 | IFEval | IFBench |
 | --- | ---: | ---: | ---: | ---: | ---: |
+| **EdgeRock-4B** | 96.7 | 87.8 | 61.6 | 88.0 | 65.3 |
 | Qwen3.5-4B | 86.0 | 71.0 | 75.7 | 89.6 | 60.3 |
 | Gemma4-E2B-it | 90.9 | 79.6 | 59.6 | 82.4 | 29.0 |
 | MiniCPM5-2B | 97.6 | 94.8 | 83.3 | 86.3 | 64.0 |
@@ -219,6 +259,7 @@ These eleven models retain history that grows with sequence length. Their capabi
 
 | Model | DROP F1 | MuSR | LogiQA2 |
 | --- | ---: | ---: | ---: |
+| **EdgeRock-4B** | 77.2 | 60.4 | 72.2 |
 | Qwen3.5-4B | 76.0 | 64.9 | **82.2** |
 | Gemma4-E2B-it | 72.9 | 58.9 | 59.4 |
 | MiniCPM5-2B | 76.0 | **65.3** | 73.7 |
@@ -233,17 +274,25 @@ These eleven models retain history that grows with sequence length. Their capabi
 
 ## Visual reasoning
 
-| Benchmark | EdgeRock-4B answer accuracy (%) |
-| --- | ---: |
-| MMBench EN | 88.3 |
-| MMBench CN | 89.0 |
-| POPE | 85.4 |
-| MME | 83.0 |
-| ChartQA | 83.9 |
-| AI2D | 80.0 |
-| Equal-weight mean | 84.9 |
+Answer-level accuracy (%) on six visual benchmarks. Retained is EdgeRock-4B's score divided by Qwen3.5-4B's score. Bold marks the higher accuracy in each row.
 
-Across MMBench EN/CN, POPE, MME, ChartQA, and AI2D, EdgeRock-4B reaches 84.9% equal-weight mean answer-level accuracy, versus 89.1% for Qwen3.5-4B (95.3% retained). MME answer accuracy is distinct from standard MME points; the report lists both.
+| Benchmark | EdgeRock-4B | Qwen3.5-4B | Retained (%) |
+| --- | ---: | ---: | ---: |
+| MMBench EN | 88.3 | **90.1** | 98.0 |
+| MMBench CN | 89.0 | **91.4** | 97.4 |
+| POPE | 85.4 | **88.8** | 96.2 |
+| MME | 83.0 | **86.8** | 95.6 |
+| ChartQA | 83.9 | **90.3** | 92.9 |
+| AI2D | 80.0 | **87.0** | 92.0 |
+| Equal-weight mean | 84.9 | **89.1** | 95.3 |
+
+MME answer accuracy and standard MME points measure different aspects of performance. Standard MME scores are shown separately below.
+
+| MME metric | EdgeRock-4B | Qwen3.5-4B |
+| --- | ---: | ---: |
+| Perception (points) | 1,600.4 | **1,738.3** |
+| Cognition (points) | 728.2 | **751.8** |
+| Total (points) | 2,328.7 | **2,490.1** |
 
 ## Evaluation protocol
 
