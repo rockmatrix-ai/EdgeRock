@@ -18,7 +18,7 @@
 
 **EdgeRock is a family of multimodal models that deliver strong reasoning at constant memory.** EdgeRock-4B is the first open-source release, with text and image reasoning; additional model sizes are in preparation.
 
-Full-history attention grows the key–value (KV) cache as reasoning continues, limiting serving concurrency and competing with perception on memory-constrained devices. EdgeRock combines recurrent state, sliding-window attention, and **Rock Memory Anchors (RMA)** to keep selected distant information retrievable within a fixed history budget.
+During long-context inference, full-history attention grows the key–value (KV) cache, limiting serving concurrency and competing with perception on memory-constrained devices. EdgeRock combines recurrent state, sliding-window attention, and **Rock Memory Anchors (RMA)** to keep selected distant information retrievable within a fixed history budget.
 
 - **Strong reasoning:** 82.9% mean AIME 2024–2026 pass@1, versus 18.8% for the strongest evaluated bounded-state baseline, RWKV-7 G1j in the 14B class.
 - **O(1) history memory:** fixed 72 MiB attention KV per sequence—**99.1% less** than Qwen3.5-4B at 256K context, both using BF16 KV.
@@ -555,6 +555,10 @@ In the report configuration, EdgeRock-4B's persistent history stays at **121.76 
 ### What do memory anchors add to sliding-window attention?
 
 Sliding-window attention reads recent tokens. Rock Memory Anchors preserve selected distant information as individually retrievable key–value records in a fixed-capacity bank, extending direct retrieval beyond the local window.
+
+### Does EdgeRock require quantization or speculative decoding?
+
+EdgeRock-4B's reported runtime uses **unquantized BF16 weights and KV**, FP32 recurrent state, and ordinary autoregressive decoding. Fixed-capacity history provides the memory savings; CUDA Graphs and fused operators accelerate execution. See the [runtime configuration](docs/runtime.md).
 
 ## Repository guide
 

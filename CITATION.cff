@@ -1,6 +1,23 @@
 cff-version: 1.2.0
 message: "Please cite the EdgeRock technical report using the preferred citation below."
 title: "EdgeRock: Strong Reasoning at Constant Memory"
+abstract: >-
+  EdgeRock is Rock Matrix's family of multimodal reasoning models with
+  constant-size persistent history for long-context inference. EdgeRock-4B
+  combines recurrent state, sliding-window attention, and Rock Memory Anchors
+  to retain direct access to selected distant information within an O(1)
+  history budget. This repository provides model implementation, inference
+  and evaluation code, benchmark comparisons, and the technical report.
+keywords:
+  - multimodal reasoning
+  - large language models
+  - constant-memory inference
+  - long-context inference
+  - KV cache
+  - Rock Memory Anchors
+  - sliding-window attention
+  - recurrent models
+  - efficient inference
 authors:
   - family-names: Ji
     given-names: Huishan
