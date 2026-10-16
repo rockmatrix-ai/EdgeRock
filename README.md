@@ -3,8 +3,11 @@
   <h1>EdgeRock</h1>
   <h3>Strong Reasoning at Constant Memory</h3>
   <p>Rock Matrix</p>
+  <p><b>English</b> | <a href="README_zh-CN.md">简体中文</a></p>
   <p>
     <a href="docs/report/EdgeRock_Technical_Report.pdf"><b>Technical Report</b></a>
+    &nbsp; · &nbsp;
+    <a href="docs/report/EdgeRock_Technical_Report_zh-CN.pdf"><b>中文报告</b></a>
     &nbsp; · &nbsp;
     <a href="https://arxiv.org/abs/2610.10118"><b>arXiv:2610.10118</b></a>
     &nbsp; · &nbsp;
@@ -22,7 +25,7 @@ During long-context inference, full-history attention grows the key–value (KV)
 
 - **Strong reasoning:** 82.9% mean AIME 2024–2026 pass@1, versus 18.8% for the strongest evaluated bounded-state baseline, RWKV-7 G1j in the 14B class.
 - **O(1) history memory:** fixed 72 MiB attention KV per sequence—**99.1% less** than Qwen3.5-4B at 256K context, both using BF16 KV.
-- **Higher throughput:** **5.65×** Qwen3.5-4B's end-to-end output tokens/s at 32K input + 32K output, using each model's best measured batch on one Hopper 80GB GPU.
+- **Higher throughput:** **6.42×** Qwen3.5-4B's end-to-end output tokens/s at 32K input + 32K output, using each model's best measured batch on one Hopper 80GB GPU.
 
 ![EdgeRock-4B: AIME reasoning, constant attention-KV storage, and Hopper 80GB inference throughput](assets/hero_capability.png)
 
@@ -46,7 +49,7 @@ python run.py demo --model checkpoints/EdgeRock-4B \
   --prompt 'Solve 17 × 23, explaining your reasoning.' --max-new-tokens 2048
 ```
 
-The portable backend supports CPU and CUDA. For Hopper, the [inference guide](USAGE.md) provides a **fast** profile with fused BF16 operations, CUDA Graphs, and FP32 recurrent state.
+The portable backend supports CPU and CUDA. For Hopper, the [inference guide](USAGE.md) provides a **fast** profile with fused BF16 operations, CUDA Graphs, FP32 GDN updates, and FP32 state storage at batch size 1 or FP16 storage for larger batches.
 
 ## How Rock Memory Anchors work
 
@@ -233,7 +236,7 @@ EdgeRock-4B achieves **94.1% distant-memory query accuracy**, versus **0.4%** wi
 
 ## Inference efficiency
 
-EdgeRock-4B serves **512 concurrent long-generation sequences on one Hopper 80GB GPU**. All runtime comparisons use BF16 weights/KV and ordinary autoregressive decoding with GPU-resident state; EdgeRock-4B and Qwen3.5-4B use FP32 GDN recurrence.
+EdgeRock-4B serves **512 concurrent long-generation sequences on one Hopper 80GB GPU**. All runtime comparisons use BF16 weights/KV and ordinary autoregressive decoding with GPU-resident state; EdgeRock-4B uses FP32 GDN updates, with FP32 state storage at batch size 1 and FP16 storage for larger batches. Qwen3.5-4B uses FP32 GDN state.
 
 ### Long-generation throughput
 
@@ -255,54 +258,54 @@ At **254K input + 2K output**, EdgeRock-4B reaches **226.6** decode tokens/s ver
 
 #### Best-batch output throughput
 
-EdgeRock-4B delivers **5.65× Qwen3.5-4B's output throughput** at **32K input + 32K output on one Hopper 80GB GPU**: 10,669 tokens/s at batch size 512 versus 1,889 at batch size 64, each model's best measured batch.
+EdgeRock-4B delivers **6.42× Qwen3.5-4B's output throughput** at **32K input + 32K output on one Hopper 80GB GPU**: 12,124 tokens/s at batch size 512 versus 1,889 at batch size 64, each model's best measured batch.
 
 All columns use 32K output. Cells give tokens/s: **output tokens / total time including prefill**, with batch size in parentheses.
 
 | Model | 4K input | 8K input | 16K input | 32K input |
 | --- | ---: | ---: | ---: | ---: |
-| **EdgeRock-4B** | **11,032** (512) | **10,906** (512) | **10,874** (512) | **10,669** (512) |
+| **EdgeRock-4B** | **12,479** (512) | **12,325** (512) | **12,330** (512) | **12,124** (512) |
 | Qwen3.5-4B | 3,103 (64) | 2,853 (64) | 2,472 (64) | 1,889 (64) |
 | Gemma 4 E4B | 3,940 (128) | 3,432 (128) | 2,880 (128) | 2,196 (64) |
 | MiniCPM5-2B | 3,152 (64) | 2,938 (64) | 2,575 (32) | 2,117 (32) |
 | LFM2.5-2.6B | 1,673 (64) | 1,771 (64) | 1,695 (32) | 1,727 (64) |
 
-Across 4K–32K inputs with 32K output, EdgeRock-4B's mean best-batch output throughput is **4.36× Qwen3.5-4B's** and **6.34× LFM2.5-2.6B's**.
+Across 4K–32K inputs with 32K output, EdgeRock-4B's mean best-batch output throughput is **4.94× Qwen3.5-4B's** and **7.18× LFM2.5-2.6B's**.
 
 ### Concurrency scaling
 
 ![Concurrency scaling: aggregate and per-sequence decode rates at batch sizes 32–512](assets/batch_scaling.png)
 
-At batch size 512 on one Hopper 80GB GPU, EdgeRock-4B reaches **11,038 weighted decode tokens/s**, or **21.6 per sequence**, across the 16 input/output pairs formed from 4K, 8K, 16K, and 32K lengths. Rates divide pooled subsequent output tokens by pooled decode time; memory values are workload peaks.
+At batch size 512 on one Hopper 80GB GPU, EdgeRock-4B reaches **12,497 weighted decode tokens/s**, or **24.4 per sequence**, across the 16 input/output pairs formed from 4K, 8K, 16K, and 32K lengths. Rates divide pooled subsequent output tokens by pooled decode time; memory values are workload peaks.
 
 | Batch size | Weighted decode tokens/s | Per-sequence tokens/s | Peak allocated GiB | Peak reserved GiB |
 | ---: | ---: | ---: | ---: | ---: |
-| 32 | 3,920 | 122.5 | 19.08 | 19.74 |
-| 64 | 6,176 | 96.5 | 21.66 | 22.73 |
-| 128 | 8,251 | 64.5 | 29.74 | 31.32 |
-| 256 | 10,041 | 39.2 | 45.90 | 50.89 |
-| 320 | 9,924 | 31.0 | 53.99 | 59.22 |
-| 384 | 10,723 | 27.9 | 62.06 | 67.38 |
-| 512 | **11,038** | 21.6 | 73.26 | 77.76 |
+| 32 | 4,128 | 129.0 | 18.94 | 19.49 |
+| 64 | 6,685 | 104.5 | 20.16 | 21.80 |
+| 128 | 9,049 | 70.7 | 26.74 | 27.92 |
+| 256 | 11,231 | 43.9 | 39.90 | 41.77 |
+| 320 | 11,074 | 34.6 | 46.49 | 50.69 |
+| 384 | 12,099 | 31.5 | 53.06 | 57.27 |
+| 512 | 12,497 | 24.4 | 61.26 | 66.97 |
 
 ### Short-context decoding
 
-With **4K input + 2K output on one Hopper 80GB GPU**, EdgeRock-4B scales from **229.4 decode tokens/s at batch size 1** to **11,047 at batch size 512**, excluding prefill.
+With **4K input + 2K output on one Hopper 80GB GPU**, EdgeRock-4B scales from **229.6 decode tokens/s at batch size 1** to **12,481 at batch size 512**, excluding prefill.
 
 | Batch size | Decode tokens/s | Per-sequence tokens/s | Peak allocated GiB |
 | ---: | ---: | ---: | ---: |
-| 1 | 229 | 229.4 | 14.29 |
-| 2 | 356 | 177.9 | 14.29 |
-| 4 | 670 | 167.5 | 14.29 |
-| 8 | 1,262 | 157.8 | 14.59 |
-| 16 | 2,356 | 147.2 | 15.59 |
-| 32 | 3,905 | 122.0 | 17.59 |
-| 64 | 6,180 | 96.6 | 21.60 |
-| 128 | 8,263 | 64.6 | 29.60 |
-| 256 | 10,018 | 39.1 | 45.62 |
-| 320 | 9,914 | 31.0 | 53.64 |
-| 384 | 10,693 | 27.8 | 61.64 |
-| 512 | **11,047** | 21.6 | 72.71 |
+| 1 | 230 | 229.6 | 14.27 |
+| 2 | 358 | 178.8 | 14.27 |
+| 4 | 692 | 172.9 | 14.27 |
+| 8 | 1,322 | 165.2 | 14.40 |
+| 16 | 2,442 | 152.6 | 15.21 |
+| 32 | 4,053 | 126.7 | 16.84 |
+| 64 | 6,698 | 104.7 | 20.10 |
+| 128 | 9,066 | 70.8 | 26.60 |
+| 256 | 11,100 | 43.4 | 39.62 |
+| 320 | 11,062 | 34.6 | 46.14 |
+| 384 | 12,086 | 31.5 | 52.64 |
+| 512 | 12,481 | 24.4 | 60.71 |
 
 ### Constant history and GPU memory
 
@@ -315,19 +318,19 @@ EdgeRock-4B's attention-KV capacity stays at **72 MiB per sequence**, versus Qwe
 | **EdgeRock-4B** | **72** | **72** | **72** | **72** | **O(1)** |
 | Qwen3.5-4B | 1,024 | 2,048 | 4,096 | 8,192 | O(N) |
 
-**Complete persistent history: 121.76 MiB per sequence.** The local ring stores 1,023 preceding positions; the decoder supplies the current token.
+**Batch-runtime persistent history: 97.76 MiB per sequence.** The local ring stores 1,023 preceding positions; the decoder supplies the current token.
 
 | Component | MiB per sequence |
 | --- | ---: |
 | Committed RMA anchors | 32.00 |
 | Pending RMA candidates | 8.00 |
 | Local-window KV | 31.97 |
-| FP32 recurrent matrices | 48.00 |
+| FP16 recurrent matrices | 24.00 |
 | Convolution state | 1.50 |
 | Metadata | 0.29 |
-| **Total persistent history** | **121.76** |
+| **Total persistent history** | **97.76** |
 
-**Measured GPU allocation**, including weights, history, buffers, and workspace, peaks at **16.02 GiB** for 128K input + 128K output at batch size 1 and **73.26 GiB** across the 16 long-generation workloads at batch size 512 on one Hopper 80GB GPU.
+**Measured GPU allocation**, including weights, history, buffers, and workspace, peaks at **16.02 GiB** for 128K input + 128K output at batch size 1 and **61.26 GiB** across the 16 long-generation workloads at batch size 512 on one Hopper 80GB GPU.
 
 **Runtime protocol.** 1K = 1,024 tokens. EdgeRock reports medians of three runs per workload; weighted rates pool decode tokens and time. Timing excludes loading, warmup, tokenization, and text decoding. Batch size counts submitted requests; vLLM schedules within its cache budget. [Runtime details](docs/runtime.md) specify sampling, warmup, and workload construction.
 
@@ -550,7 +553,7 @@ EdgeRock-4B is Rock Matrix's first open-source 4B multimodal reasoning model. It
 
 ### What stays constant in O(1) memory?
 
-In the report configuration, EdgeRock-4B's persistent history stays at **121.76 MiB per sequence**, including attention KV and recurrent state, as sequence length grows. Total GPU memory also includes weights and execution buffers and grows with concurrency.
+In the batch runtime, EdgeRock-4B's persistent history stays at **97.76 MiB per sequence**, including attention KV and recurrent state, as sequence length grows. Total GPU memory also includes weights and execution buffers and grows with concurrency.
 
 ### What do memory anchors add to sliding-window attention?
 
@@ -558,12 +561,12 @@ Sliding-window attention reads recent tokens. Rock Memory Anchors preserve selec
 
 ### Does EdgeRock require quantization or speculative decoding?
 
-EdgeRock-4B's reported runtime uses **unquantized BF16 weights and KV**, FP32 recurrent state, and ordinary autoregressive decoding. Fixed-capacity history provides the memory savings; CUDA Graphs and fused operators accelerate execution. See the [runtime configuration](docs/runtime.md).
+EdgeRock-4B's reported runtime uses **unquantized BF16 weights and KV**, FP32 GDN updates, and ordinary autoregressive decoding. GDN state storage is FP32 at batch size 1 and FP16 for larger batches. Fixed-capacity history provides the memory savings; CUDA Graphs and fused operators accelerate execution. See the [runtime configuration](docs/runtime.md).
 
 ## Repository guide
 
 - [Inference guide](USAGE.md) · [Runtime and reproduction](docs/runtime.md) · [Evaluation details](docs/results.md)
-- [Technical report](docs/report/EdgeRock_Technical_Report.pdf) · [LaTeX source](docs/report/latex/main.tex) · [Citation metadata](CITATION.cff)
+- [Technical report](docs/report/EdgeRock_Technical_Report.pdf) · [中文报告](docs/report/EdgeRock_Technical_Report_zh-CN.pdf) · [LaTeX source](docs/report/latex/main.tex) · [Citation metadata](CITATION.cff)
 - [Runtime source](runtime/) · [Documentation index for AI readers](llms.txt)
 
 ## Citation

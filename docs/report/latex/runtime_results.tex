@@ -1,14 +1,15 @@
-\newcommand{\EdgeBatchRatio}{4.36}
-\newcommand{\EdgeLFMRatio}{6.34}
+\newcommand{\EdgePeakBatchRatio}{6.42}
+\newcommand{\EdgeBatchRatio}{4.94}
+\newcommand{\EdgeLFMRatio}{7.18}
 \newcommand{\EdgeLongTPS}{233.7}
 \newcommand{\EdgeLongMemory}{16.02}
 \newcommand{\EdgeSingleRatio}{1.54}
-\newcommand{\EdgeWeightedTPS}{11,038}
-\newcommand{\EdgePerSequenceTPS}{21.6}
-\newcommand{\EdgeBatchMemory}{73.26}
-\newcommand{\EdgeShortTPS}{229.4}
-\newcommand{\EdgeShortMemory}{14.29}
-\newcommand{\EdgeShortBatchTPS}{11,047}
+\newcommand{\EdgeWeightedTPS}{12,497}
+\newcommand{\EdgePerSequenceTPS}{24.4}
+\newcommand{\EdgeBatchMemory}{61.26}
+\newcommand{\EdgeShortTPS}{229.6}
+\newcommand{\EdgeShortMemory}{14.27}
+\newcommand{\EdgeShortBatchTPS}{12,481}
 \newcommand{\PeerThroughputResults}{%
 \begin{table}[!htbp]
 \centering\small
@@ -19,7 +20,7 @@
 \toprule
 Model & 4K & 8K & 16K & 32K\\
 \midrule
-EdgeRock-4B & \textbf{11,032} (512) & \textbf{10,906} (512) & \textbf{10,874} (512) & \textbf{10,669} (512)\\
+EdgeRock-4B & \textbf{12,479} (512) & \textbf{12,325} (512) & \textbf{12,330} (512) & \textbf{12,124} (512)\\
 Qwen3.5-4B & 3,103 (64) & 2,853 (64) & 2,472 (64) & 1,889 (64)\\
 Gemma 4 E4B & 3,940 (128) & 3,432 (128) & 2,880 (128) & 2,196 (64)\\
 MiniCPM5-2B & 3,152 (64) & 2,938 (64) & 2,575 (32) & 2,117 (32)\\
@@ -34,13 +35,13 @@ LFM2.5-2.6B & 1,673 (64) & 1,771 (64) & 1,695 (32) & 1,727 (64)\\
 \toprule
 Batch size & Decode, tokens/s & Per sequence, tokens/s & Allocated, GiB & Reserved, GiB\\
 \midrule
-32 & 3,920 & 122.5 & 19.08 & 19.74\\
-64 & 6,176 & 96.5 & 21.66 & 22.73\\
-128 & 8,251 & 64.5 & 29.74 & 31.32\\
-256 & 10,041 & 39.2 & 45.90 & 50.89\\
-320 & 9,924 & 31.0 & 53.99 & 59.22\\
-384 & 10,723 & 27.9 & 62.06 & 67.38\\
-512 & 11,038 & 21.6 & 73.26 & 77.76\\
+32 & 4,128 & 129.0 & 18.94 & 19.49\\
+64 & 6,685 & 104.5 & 20.16 & 21.80\\
+128 & 9,049 & 70.7 & 26.74 & 27.92\\
+256 & 11,231 & 43.9 & 39.90 & 41.77\\
+320 & 11,074 & 34.6 & 46.49 & 50.69\\
+384 & 12,099 & 31.5 & 53.06 & 57.27\\
+512 & 12,497 & 24.4 & 61.26 & 66.97\\
 \bottomrule\end{tabularx}\end{table}}
 \newcommand{\ShortScalingResults}{%
 \begin{table}[!htbp]
@@ -51,16 +52,16 @@ Batch size & Decode, tokens/s & Per sequence, tokens/s & Allocated, GiB & Reserv
 \toprule
 Batch size & Decode, tokens/s & Per sequence, tokens/s & Allocated, GiB\\
 \midrule
-1 & 229 & 229.4 & 14.29\\
-2 & 356 & 177.9 & 14.29\\
-4 & 670 & 167.5 & 14.29\\
-8 & 1,262 & 157.8 & 14.59\\
-16 & 2,356 & 147.2 & 15.59\\
-32 & 3,905 & 122.0 & 17.59\\
-64 & 6,180 & 96.6 & 21.60\\
-128 & 8,263 & 64.6 & 29.60\\
-256 & 10,018 & 39.1 & 45.62\\
-320 & 9,914 & 31.0 & 53.64\\
-384 & 10,693 & 27.8 & 61.64\\
-512 & 11,047 & 21.6 & 72.71\\
+1 & 230 & 229.6 & 14.27\\
+2 & 358 & 178.8 & 14.27\\
+4 & 692 & 172.9 & 14.27\\
+8 & 1,322 & 165.2 & 14.40\\
+16 & 2,442 & 152.6 & 15.21\\
+32 & 4,053 & 126.7 & 16.84\\
+64 & 6,698 & 104.7 & 20.10\\
+128 & 9,066 & 70.8 & 26.60\\
+256 & 11,100 & 43.4 & 39.62\\
+320 & 11,062 & 34.6 & 46.14\\
+384 & 12,086 & 31.5 & 52.64\\
+512 & 12,481 & 24.4 & 60.71\\
 \bottomrule\end{tabularx}\end{table}}

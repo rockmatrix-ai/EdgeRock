@@ -4,7 +4,7 @@
   "source": "Frozen implementation used for the October 2026 technical report",
   "packaging_changes": [
     "Package-relative imports.",
-    "FP32 cache initialization is implemented directly in FixedMemoryLinearAttentionLayer."
+    "Cache initialization follows the selected recurrent-state precision profile."
   ],
   "components": {
     "b1_bf16_selected.py": {

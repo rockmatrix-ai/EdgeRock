@@ -3,7 +3,7 @@
 
 \subsection{Decoder layout}
 
-EdgeRock-4B adapts the Qwen3.5-4B language backbone~\cite{qwen35}. It retains 24 Gated DeltaNet (GDN) layers and replaces its eight full-attention layers with a 1,024-position sliding window~\cite{longformer} plus an independent Rock Memory Anchors (RMA) module. The resulting pattern is
+EdgeRock-4B adapts the Qwen3.5-4B language backbone~\cite{qwen35}. It retains 24 Gated DeltaNet (GDN) layers and replaces its eight full-attention layers with a 1,024-position sliding window~\cite{longformer} plus an independent RMA module. The resulting pattern is
 \begin{equation}
 \bigl[\mathrm{GDN},\ \mathrm{GDN},\ \mathrm{GDN},\ \mathrm{SWA}_{1024}\parallel\mathrm{RMA}\bigr]\times8.
 \end{equation}
@@ -12,7 +12,7 @@ Every sequence mixer is followed by a feed-forward sublayer; each of the eight R
 \begin{figure}[!tbp]
 \centering
 \includegraphics[width=\linewidth]{architecture_overview.pdf}
-\caption{\textbf{EdgeRock architecture.} \textbf{(a)} Text and image features share a decoder combining recurrence, local attention, and Rock Memory Anchors (RMA). \textbf{(b)} Per KV group, admission selects up to 1,024 records from the committed bank and 256 writer-generated candidates. Selections become readable in the next block. \textbf{(c)} Current queries read committed anchors; null attention and a query-conditioned signed gate control their contribution to the residual stream alongside local attention.}
+\caption{\textbf{EdgeRock architecture.} \textbf{(a)} Text and image features share a decoder combining recurrence, local attention, and RMA. \textbf{(b)} Per KV group, admission selects up to 1,024 records from the committed bank and 256 writer-generated candidates. Selections become readable in the next block. \textbf{(c)} Current queries read committed anchors; null attention and a query-conditioned signed gate control their contribution to the residual stream alongside local attention.}
 \label{fig:architecture}
 \end{figure}
 
@@ -59,7 +59,7 @@ Candidate block $C$ & 256 & RMA KV precision & BF16\\
 \label{sec:training}
 EdgeRock-4B is converted from Qwen3.5-4B in four stages. RMA adaptation (M0) teaches the new RMA modules to retain and retrieve information needed for later predictions. Joint adaptation (R) trains RMA together with the recurrent and local-attention backbone, so downstream layers learn to use what is retrieved. Supervised post-training (S) develops general-purpose responses with the adapted history mechanism, and reinforcement learning with verifiable rewards (RLVR)~\cite{tulu3,deepseekr1} refines responses using feedback on answer correctness and task completion. Section~\ref{sec:diagnostic} tracks memory accuracy after each stage (Figure~\ref{fig:memory}a).
 
-\section{How do Rock Memory Anchors preserve distant information?}
+\section{How does RMA preserve distant information?}
 \label{sec:memory-algorithm}
 
 At each token, RMA reads the committed anchor bank and produces a candidate record from the same causal input. At each block boundary, admission selects records from the bank and the new candidates; the updated bank becomes readable in the next block. Local attention covers recent tokens while candidates accumulate. Algorithm~\ref{alg:anchor-update} in Appendix~\ref{sec:streaming-execution} gives the complete per-token procedure.
@@ -71,7 +71,7 @@ Let $u_t=\mathrm{Norm}_{\mathrm{mem}}(h_t)\in\mathbb R^D$, with $D=2{,}560$. An 
 \begin{equation}
 w_t = u_t+W_{\mathrm{down}}\!\left[\mathrm{SiLU}(W_{\mathrm{gate}}u_t)\odot W_{\mathrm{up}}u_t\right].
 \end{equation}
-RMA KV projections use the writer output $w_t$; query projections use $u_t$. The writer has an intermediate width of 2,560~\cite{edgerockcode,edgerockconfig}.
+RMA KV projections use the writer output $w_t$; query projections use $u_t$. The writer has an intermediate width of 2,560~\cite{yanchorcode,yanchorconfig}.
 
 \subsection{Causal admission in four independent KV groups}
 
@@ -79,7 +79,7 @@ A small network assigns a retention priority to each KV group:
 \begin{equation}
 a_t = W_{a,2}\,\mathrm{SiLU}(W_{a,1}u_t),\qquad a_t\in\mathbb R^4.
 \end{equation}
-Bias-free projections of size $2560\!\rightarrow\!256\!\rightarrow\!4$ compute FP32 scores from the current causal context~\cite{edgerockcode,edgerockconfig}. Each group independently retains its highest-scoring records; source positions may overlap across groups.
+Bias-free projections of size $2560\!\rightarrow\!256\!\rightarrow\!4$ compute FP32 scores from the current causal context~\cite{yanchorcode,yanchorconfig}. Each group independently retains its highest-scoring records; source positions may overlap across groups.
 
 \subsection{Blockwise commits and causal visibility}
 
@@ -104,7 +104,7 @@ Every discarded record already has at least $K$ records ahead of it, so later ca
 \subsection{Query-dependent retrieval from the anchor bank}
 \label{sec:read}
 
-A later query can address any retained record, including one whose source position has left the local window. Each module uses 16 query heads over four KV groups~\cite{gqa}, with head dimension $d=256$. Queries and keys use learned RMS normalization~\cite{rmsnorm,edgerockcode,edgerockconfig}:
+A later query can address any retained record, including one whose source position has left the local window. Each module uses 16 query heads over four KV groups~\cite{gqa}, with head dimension $d=256$. Queries and keys use learned RMS normalization~\cite{rmsnorm,yanchorcode,yanchorconfig}:
 \begin{equation}
 \operatorname{RMS}_{\gamma}(x)=\frac{\gamma\odot x}{\sqrt{d^{-1}\sum_{i=1}^{d}x_i^2+10^{-6}}}.
 \end{equation}
@@ -167,28 +167,28 @@ Recurrent matrices, the local ring, committed anchor banks, pending candidates, 
 S_{\mathrm{committed}}&=2\times8\times4\times1024\times256\times2\ \mathrm{bytes}=32\ \mathrm{MiB},\\
 S_{\mathrm{candidates}}&=2\times8\times4\times256\times256\times2\ \mathrm{bytes}=8\ \mathrm{MiB}.
 \end{align}
-The factors count keys and values, modules, KV groups, records, head width and two-byte BF16 elements. RMA uses \textbf{40 MiB of KV per sequence}. A window of 1,024 positions adds at most 32\,MiB, giving \textbf{72\,MiB of attention KV per sequence}. With the same eight attention layers, four KV heads, head width, and BF16 precision, a 256K-token full-attention cache requires $32\,\mathrm{KiB}\times262{,}144=8$\,GiB. The attention KV reduction is $1-72/8192\approx\mathbf{99.1\%}$. Table~\ref{tab:state-budget} also accounts for FP32 recurrence and auxiliary history tensors.
+The factors count keys and values, modules, KV groups, records, head width and two-byte BF16 elements. RMA uses \textbf{40 MiB of KV per sequence}. A window of 1,024 positions adds at most 32\,MiB, giving \textbf{72\,MiB of attention KV per sequence}. With the same eight attention layers, four KV heads, head width, and BF16 precision, a 256K-token full-attention cache requires $32\,\mathrm{KiB}\times262{,}144=8$\,GiB. The attention KV reduction is $1-72/8192\approx\mathbf{99.1\%}$. Table~\ref{tab:state-budget} also accounts for recurrent state and auxiliary history tensors.
 \begin{table}[!htbp]
 \centering\small
-\caption{Persistent history per sequence. Attention KV is stored in BF16 and recurrent state in FP32. Every entry is fixed in size, independent of context length.}
+\caption{Persistent history per sequence. Every entry is fixed in size, independent of context length.}
 \label{tab:state-budget}
-\begin{tabularx}{\linewidth}{@{}Yrr@{}}
+\begin{tabularx}{\linewidth}{@{}Ylrr@{}}
 \toprule
-Component & MiB per sequence & Share\\
+Component & Storage type & MiB per sequence & Share of total\\
 \midrule
-Attention KV & 71.97 & 59.1\%\\
-\quad Local window (1,023 preceding positions) & 31.97 & \\
-\quad RMA & 40.00 & \\
-\qquad Committed anchors & 32.00 & \\
-\qquad Pending candidates & 8.00 & \\
+\textbf{Attention KV} &  & \textbf{71.97} & \textbf{73.6\%}\\
+\quad Local window (1,023 preceding positions) & BF16 & 31.97 & 32.7\%\\
+\quad \textbf{RMA} & BF16 & \textbf{40.00} & \textbf{40.9\%}\\
+\qquad Committed anchors &  & 32.00 & 32.7\%\\
+\qquad Pending candidates &  & 8.00 & 8.2\%\\
 \addlinespace[3pt]
-Recurrent state & 49.50 & 40.7\%\\
-\quad FP32 recurrent matrices & 48.00 & \\
-\quad Convolution state & 1.50 & \\
+\textbf{Recurrent state} &  & \textbf{25.50} & \textbf{26.1\%}\\
+\quad Recurrent matrices & FP16 & 24.00 & 24.6\%\\
+\quad Convolution state & BF16 & 1.50 & 1.5\%\\
 \addlinespace[3pt]
-Metadata (scores, positions, validity, counters) & 0.29 & 0.2\%\\
+\textbf{Metadata} (scores, positions, validity, counters) &  & \textbf{0.29} & \textbf{0.3\%}\\
 \midrule
-Total & 121.76 & 100.0\%\\
+\textbf{Total} &  & \textbf{97.76} & \textbf{100.0\%}\\
 \bottomrule
 \end{tabularx}
 \end{table}

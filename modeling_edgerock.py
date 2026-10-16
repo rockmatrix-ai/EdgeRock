@@ -511,13 +511,16 @@ def _batch_scatter_state_(target: Any, source: Any, target_indices: Tensor, sour
 
 class FixedMemoryLinearAttentionLayer(LinearAttentionLayer):
 
+    def __init__(self, recurrent_prefill_dtype=None):
+        super().__init__()
+        self.recurrent_prefill_dtype = recurrent_prefill_dtype
+
     def lazy_initialization(self, conv_states=None, recurrent_states=None):
         if conv_states is not None:
             super().lazy_initialization(conv_states=conv_states)
         if recurrent_states is not None:
-            # Convolution and recurrence have independent storage precision.
             conv_dtype = self.dtype
-            self.dtype = recurrent_states.dtype
+            self.dtype = self.recurrent_prefill_dtype or recurrent_states.dtype
             super().lazy_initialization(recurrent_states=recurrent_states)
             self.dtype = conv_dtype
 
@@ -703,7 +706,8 @@ class FixedMemoryHybridDynamicCache(Cache):
             if index in swa_layers:
                 layers.append(FixedMemorySlidingWindowLayer(window))
             elif layer_type == 'linear_attention':
-                layers.append(FixedMemoryLinearAttentionLayer())
+                prefill_dtype = torch.bfloat16 if getattr(text_config, 'gdn_recurrent_state_storage', 'fp32') == 'fp16_non_anchor' else None
+                layers.append(FixedMemoryLinearAttentionLayer(recurrent_prefill_dtype=prefill_dtype))
             else:
                 raise ValueError(f'unsupported fixed-memory cache layer {index}: {layer_type}')
         super().__init__(layers=layers)

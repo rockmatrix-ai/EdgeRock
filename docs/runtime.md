@@ -1,6 +1,6 @@
 # EdgeRock-4B inference runtime and results
 
-EdgeRock-4B sustains 233.7 decode tokens/s at batch size 1 with 128K input and 128K output, and reaches 10,669 end-to-end output tokens/s at batch size 512 with 32K input and 32K output. The [technical report](report/EdgeRock_Technical_Report.pdf) measures both on one Hopper 80GB GPU with tensor-parallel size one and ordinary autoregressive decoding.
+EdgeRock-4B sustains 233.7 decode tokens/s at batch size 1 with 128K input and 128K output, and reaches 12,124 end-to-end output tokens/s at batch size 512 with 32K input and 32K output. The [technical report](report/EdgeRock_Technical_Report.pdf) measures both on one Hopper 80GB GPU with tensor-parallel size one and ordinary autoregressive decoding.
 
 ## Precision and history contract
 
@@ -8,7 +8,8 @@ EdgeRock-4B sustains 233.7 decode tokens/s at batch size 1 with 128K input and 1
 | --- | --- |
 | All model weights, including MLP and output head | BF16, unquantized |
 | Local and anchor KV | BF16 |
-| GDN recurrent state, from the first prefill write onward | FP32 |
+| GDN recurrent-state storage | FP32 at batch size 1; FP16 for larger batches |
+| GDN state updates | FP32 |
 | Local attention window | 1,024 positions |
 | Committed anchor capacity | 1,024 records per KV group |
 | Candidate block | 256 positions |
@@ -17,13 +18,13 @@ EdgeRock-4B sustains 233.7 decode tokens/s at batch size 1 with 128K input and 1
 
 ## Constant-size persistent history
 
-EdgeRock-4B maintains 121.76 MiB of persistent history per sequence, including FP32 recurrence and auxiliary tensors, independently of sequence length. The configuration-derived attention-KV capacity is 72 MiB. During decode, the local ring stores 1,023 preceding positions while the current token is supplied by the decoder, so the audited local-plus-anchor KV payload is 71.97 MiB. Full device allocation also includes weights, buffers, graphs, and workspace.
+EdgeRock-4B maintains 97.76 MiB of persistent history per sequence, in the batch runtime, including FP16 recurrent matrices and auxiliary tensors, independently of sequence length. The configuration-derived attention-KV capacity is 72 MiB. During decode, the local ring stores 1,023 preceding positions while the current token is supplied by the decoder, so the audited local-plus-anchor KV payload is 71.97 MiB. Full device allocation also includes weights, buffers, graphs, and workspace.
 
 ## Optimized execution
 
 The `fast` CUDA profile retains the report's arithmetic and cache capacities. Its selected implementation combines BF16 projection and normalization fusions, joint memory projection, cross-layer residual/RMSNorm fusion, local-attention Q/K preparation, and CUDA Graph replay. At batch size 512, original projection parameters share byte-identical storage with packed BF16 weights, removing 4.95 GiB of duplicate allocation.
 
-The fixed-length batch-size-1 benchmark additionally uses the validated output-head/sampling-state fusion. That path is restricted to its tested sampling contract: temperature 1.0, top-k 20, top-p 0.95, EOS disabled, no streaming or resumed prefill. General generation retains EOS, configurable sampling, and request-stream handling through the native generator. Both use BF16 weights/KV and FP32 recurrence.
+The fixed-length batch-size-1 benchmark additionally uses the validated output-head/sampling-state fusion. That path is restricted to its tested sampling contract: temperature 1.0, top-k 20, top-p 0.95, EOS disabled, no streaming or resumed prefill. General generation retains EOS, configurable sampling, and request-stream handling through the native generator. Both use BF16 weights/KV and FP32 GDN updates. The batch-size-1 path stores recurrent state in FP32; larger batches store it in FP16.
 
 `reference` retains the reference local-attention execution path. It also uses unquantized weights and FP32 recurrence. It is a correctness-oriented execution profile, not the report's throughput configuration.
 
@@ -45,7 +46,7 @@ The benchmark uses synthetic tokens, a separate 256-token warmup, EOS disabled, 
 
 ## Measured results
 
-The following tables report fixed-length performance on one Hopper 80GB GPU with BF16 weights and KV, FP32 recurrent state, and tensor-parallel size one.
+The following tables report fixed-length performance on one Hopper 80GB GPU with BF16 weights and KV, FP32 GDN updates, and tensor-parallel size one. Recurrent-state storage is FP32 at batch size 1 and FP16 for larger batches.
 
 ### End-to-end output throughput, 32K output
 
@@ -53,25 +54,25 @@ Each cell is output tokens/s (best measured batch size).
 
 | Model | 4K input | 8K input | 16K input | 32K input |
 | --- | ---: | ---: | ---: | ---: |
-| **EdgeRock-4B** | **11,032** (512) | **10,906** (512) | **10,874** (512) | **10,669** (512) |
+| **EdgeRock-4B** | **12,479** (512) | **12,325** (512) | **12,330** (512) | **12,124** (512) |
 | Qwen3.5-4B | 3,103 (64) | 2,853 (64) | 2,472 (64) | 1,889 (64) |
 | Gemma 4 E4B | 3,940 (128) | 3,432 (128) | 2,880 (128) | 2,196 (64) |
 | MiniCPM5-2B | 3,152 (64) | 2,938 (64) | 2,575 (32) | 2,117 (32) |
 | LFM2.5-2.6B | 1,673 (64) | 1,771 (64) | 1,695 (32) | 1,727 (64) |
 
-Mean workload-specific ratios to Qwen3.5-4B and LFM2.5-2.6B are 4.36× and 6.34×. At 32K input and 32K output on one Hopper 80GB GPU, EdgeRock-4B reaches 10,669 output tokens/s at batch size 512 versus 1,889 output tokens/s for Qwen3.5-4B at batch size 64: **5.65× higher end-to-end output-token throughput**. Each model uses its best measured batch size; elapsed time includes prefill and the numerator counts output tokens only.
+Mean workload-specific ratios to Qwen3.5-4B and LFM2.5-2.6B are 4.94× and 7.18×. At 32K input and 32K output on one Hopper 80GB GPU, EdgeRock-4B reaches 12,124 output tokens/s at batch size 512 versus 1,889 output tokens/s for Qwen3.5-4B at batch size 64: **6.42× higher end-to-end output-token throughput**. Each model uses its best measured batch size; elapsed time includes prefill and the numerator counts output tokens only.
 
 ### Batch scaling over all 16 length pairs
 
 | Batch size | Weighted decode tokens/s | Per-sequence tokens/s | Peak allocated GiB | Peak reserved GiB |
 | ---: | ---: | ---: | ---: | ---: |
-| 32 | 3,920 | 122.5 | 19.08 | 19.74 |
-| 64 | 6,176 | 96.5 | 21.66 | 22.73 |
-| 128 | 8,251 | 64.5 | 29.74 | 31.32 |
-| 256 | 10,041 | 39.2 | 45.90 | 50.89 |
-| 320 | 9,924 | 31.0 | 53.99 | 59.22 |
-| 384 | 10,723 | 27.9 | 62.06 | 67.38 |
-| 512 | 11,038 | 21.6 | 73.26 | 77.76 |
+| 32 | 4,128 | 129.0 | 18.94 | 19.49 |
+| 64 | 6,685 | 104.5 | 20.16 | 21.80 |
+| 128 | 9,049 | 70.7 | 26.74 | 27.92 |
+| 256 | 11,231 | 43.9 | 39.90 | 41.77 |
+| 320 | 11,074 | 34.6 | 46.49 | 50.69 |
+| 384 | 12,099 | 31.5 | 53.06 | 57.27 |
+| 512 | 12,497 | 24.4 | 61.26 | 66.97 |
 
 ![Concurrency scaling](../assets/batch_scaling.png)
 
@@ -79,18 +80,18 @@ Mean workload-specific ratios to Qwen3.5-4B and LFM2.5-2.6B are 4.36× and 6.34�
 
 | Batch size | Decode tokens/s | Per-sequence tokens/s | Peak allocated GiB |
 | ---: | ---: | ---: | ---: |
-| 1 | 229 | 229.4 | 14.29 |
-| 2 | 356 | 177.9 | 14.29 |
-| 4 | 670 | 167.5 | 14.29 |
-| 8 | 1,262 | 157.8 | 14.59 |
-| 16 | 2,356 | 147.2 | 15.59 |
-| 32 | 3,905 | 122.0 | 17.59 |
-| 64 | 6,180 | 96.6 | 21.60 |
-| 128 | 8,263 | 64.6 | 29.60 |
-| 256 | 10,018 | 39.1 | 45.62 |
-| 320 | 9,914 | 31.0 | 53.64 |
-| 384 | 10,693 | 27.8 | 61.64 |
-| 512 | 11,047 | 21.6 | 72.71 |
+| 1 | 230 | 229.6 | 14.27 |
+| 2 | 358 | 178.8 | 14.27 |
+| 4 | 692 | 172.9 | 14.27 |
+| 8 | 1,322 | 165.2 | 14.40 |
+| 16 | 2,442 | 152.6 | 15.21 |
+| 32 | 4,053 | 126.7 | 16.84 |
+| 64 | 6,698 | 104.7 | 20.10 |
+| 128 | 9,066 | 70.8 | 26.60 |
+| 256 | 11,100 | 43.4 | 39.62 |
+| 320 | 11,062 | 34.6 | 46.14 |
+| 384 | 12,086 | 31.5 | 52.64 |
+| 512 | 12,481 | 24.4 | 60.71 |
 
 ![GPU memory scaling](../assets/memory_capacity.png)
 

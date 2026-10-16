@@ -102,12 +102,13 @@ The server supports `GET /v1/models`, text chat completions, SSE streaming, and 
 
 ## Precision profiles
 
-| Profile | Weights / MLP / output head | Local and anchor KV | GDN recurrence |
-| --- | --- | --- | --- |
-| `fast`, every batch size | BF16, unquantized | BF16 | FP32 |
-| `reference`, CUDA BF16 | BF16, unquantized | BF16 | FP32 |
+| Profile | Weights / MLP / output head | Local and anchor KV | GDN decode state storage | GDN updates / normalization / gates |
+| --- | --- | --- | --- | --- |
+| `fast`, batch size 1 | BF16, unquantized | BF16 | FP32 | FP32 |
+| `fast`, batch size 32 / 64 / 128 / 256 / 320 / 512 | BF16, unquantized | BF16 | FP16 | FP32 |
+| `reference`, CUDA BF16 | BF16, unquantized | BF16 | FP32 | FP32 |
 
-`fast` enables the selected BF16 optimizations and, at batch size 512, shared packed-weight storage. `reference` retains reference local-attention arithmetic. Both profiles retain BF16 MLP computation and FP32 recurrent state. The report uses the fast profile; all history remains on the GPU, and decoding is not speculative.
+`fast` uses FP16 GDN decode state storage for batches above one, with FP32 updates, normalization, and gates. For batches above one, prefill stores its recurrent state in BF16 and converts it to FP16 before decode graph capture or slot refill; recurrent updates and accumulation remain FP32 throughout. Batch size 1 and `reference` retain FP32 state storage during both prefill and decode. The profile enables the selected BF16 optimizations and, at batch size 512, shared packed-weight storage. `reference` retains reference local-attention arithmetic and FP32 state storage. Both profiles use BF16 MLP computation without INT8 quantization. The report uses the fast profile; all history remains on the GPU, and decoding is not speculative.
 
 ## Reproduce fixed-length performance workloads
 

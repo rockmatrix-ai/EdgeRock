@@ -3,7 +3,7 @@
 \label{app:runtime}
 
 \subsection{Workloads and hardware}
-All runs use one NVIDIA Hopper 80GB GPU and tensor-parallel size one. All matrix weights and KV are BF16. EdgeRock and Qwen retain FP32 recurrent state.
+All runs use one NVIDIA Hopper 80GB GPU and tensor-parallel size one. All matrix weights and KV are BF16.
 
 Here $1\mathrm{K}=1{,}024$ tokens. The sustained single-request workload (batch size $=1$) is 128K input plus 128K output. A second single-request workload uses 254K input and 2K output, with three independent runs per model for EdgeRock and Qwen; both workloads total 262,144 tokens. Long-generation throughput uses 4K/8K/16K/32K inputs and 32K output. The full EdgeRock sweep combines those four input lengths with the same four output lengths at batches 32, 64, 128, 256, 320, 384, and 512. A separate 4K-input/2K-output sweep covers batch sizes 1, 2, 4, 8, 16, 32, 64, 128, 256, 320, 384, and 512. Each EdgeRock configuration uses three independent runs; rates are medians unless specified as weighted.
 
@@ -25,7 +25,7 @@ Packed projections and fused normalization, rotary encoding, and memory operatio
 \toprule
 Model & History precision & Execution path\\
 \midrule
-EdgeRock-4B & BF16 KV; FP32 GDN state & Custom CUDA Graph engine; fused BF16 kernels; directly indexed state and local rings\\
+EdgeRock-4B & BF16 KV; GDN: FP32 at batch size $1$, FP16 otherwise; FP32 updates & Custom CUDA Graph engine; fused BF16 kernels; directly indexed state and local rings\\
 \addlinespace[4pt]
 Qwen3.5-4B & BF16 KV; FP32 GDN state & vLLM~\cite{pagedattention} CUDA Graphs; FlashAttention-3~\cite{flashattention3} (batch size $1$), -4~\cite{flashattention4} (batch); FlashInfer~\cite{flashinfer} GDN prefill and fused decode\\
 \addlinespace[4pt]
@@ -43,7 +43,7 @@ EdgeRock and LFM test batches 32, 64, 128, 256, 320, 384, and 512; Qwen and Mini
 The vLLM peers use CUDA Graphs, chunked prefill, and a 16K prefill-token budget. Qwen, Gemma, and MiniCPM use asynchronous scheduling. Gemma, MiniCPM, and LFM use 95\% GPU-memory utilization. The synthetic single-request workloads use a 256K execution capacity with unchanged weights and RoPE frequencies. Gemma E4B denotes effective scale; its full checkpoint is approximately 8B parameters. MiniCPM's checkpoint is approximately 2.52B.
 
 \subsection{History and device allocation}
-The 72\,MiB of attention KV is a configuration-derived bound. During decoding, the local cache stores 1,023 preceding positions and the decoder supplies the current token. The audited logical tensors in Table~\ref{tab:state-budget} total 121.76\,MiB per sequence, including FP32 recurrence, convolution state, and anchor metadata.
+The 72\,MiB of attention KV is a configuration-derived bound. During decoding, the local cache stores 1,023 preceding positions and the decoder supplies the current token. The history tensors in Table~\ref{tab:state-budget} total 97.76\,MiB per sequence in the batch runtime, including recurrent state, convolution state, and anchor metadata.
 
 Peak tensor allocation includes weights, history, input/output buffers, graph storage, and temporary workspace. Reserved memory also includes cached allocator blocks. At batch size $512$, shared storage for original and packed BF16 projections eliminates duplicate weights while retaining the full history capacity.
 
