@@ -1,12 +1,18 @@
 # EdgeRock
 
-> EdgeRock is Rock Matrix's family of multimodal reasoning models with constant-size persistent history. EdgeRock-4B is the first open-source release, supporting text and image reasoning through recurrent state, sliding-window attention, and Rock Memory Anchors.
+> EdgeRock is Rock Matrix's family of multimodal reasoning models with constant-size persistent history. EdgeRock-4B is its first open-source 4B model, supporting text and image reasoning through recurrent state, sliding-window attention, and Rock Memory Anchors (RMA).
 
-Persistent history is O(1) in sequence length at fixed model and cache capacities. The README displays all eight report figures and the complete 29-benchmark comparison tables inline. Bounded-state capability, compact-model comparisons, and source-model retention are separate. Runtime results distinguish single-request decode speed, best-batch output throughput, attention-KV capacity, and measured GPU allocation.
+A memory anchor is a learned key–value record retrieved after its source information leaves the local attention window. RMA stores these records in a fixed-capacity bank. Persistent history is O(1) in sequence length; total GPU allocation also includes weights, buffers, and workspace and scales with concurrency.
+
+## Key results
+
+- Reasoning: EdgeRock-4B averages 82.9% pass@1 on AIME 2024–2026, versus 18.8% for RWKV-7 G1j in the 14B class, the strongest evaluated bounded-state baseline on AIME.
+- Memory: 72 MiB attention KV per sequence, 99.1% less than Qwen3.5-4B at 256K context with BF16 KV. Complete persistent history, including FP32 recurrence, is 121.76 MiB per sequence.
+- Throughput: 5.65× Qwen3.5-4B's end-to-end output tokens/s at 32K input + 32K output on one Hopper 80GB GPU, using each model's best measured batch. Output tokens alone form the numerator; elapsed time includes prefill. Weights/KV are BF16 and recurrence is FP32, with ordinary autoregressive decoding.
 
 ## Model and results
 
-- [Model overview, full figures, and comparison tables](https://raw.githubusercontent.com/rockmatrix-ai/EdgeRock/main/README.md): model definition, Rock Memory Anchors, text and visual benchmarks, throughput and memory results, quick start, and FAQ.
+- [Model overview and evidence](https://raw.githubusercontent.com/rockmatrix-ai/EdgeRock/main/README.md): all eight report figures and complete comparison tables, plus model definitions and FAQ. Bounded-state capability, compact-model comparisons, and source-model retention appear separately.
 - [Evaluation results](https://raw.githubusercontent.com/rockmatrix-ai/EdgeRock/main/docs/results.md): text and image benchmarks, comparison groups, and evaluation protocol.
 - [Inference runtime and results](https://raw.githubusercontent.com/rockmatrix-ai/EdgeRock/main/docs/runtime.md): BF16 execution, FP32 recurrence, constant history, throughput definitions, and measured workloads.
 - [Model weights on Hugging Face](https://huggingface.co/rockmatrix-ai/EdgeRock): official EdgeRock-4B checkpoint and model card.
