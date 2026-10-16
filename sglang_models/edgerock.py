@@ -3,7 +3,6 @@
 from dataclasses import fields
 from pathlib import Path
 from types import SimpleNamespace
-import os
 import sys
 import torch
 from torch import nn

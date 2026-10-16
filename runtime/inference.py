@@ -56,7 +56,7 @@ class Engine:
                 local_files_only=True, attn_implementation='flash_attention_2').to(self.device).eval().requires_grad_(False)
             self.model.config.fixed_memory_swa_reproducible_decode = profile == 'reference'
             self.model.config.fixed_memory_swa_shared_ring_storage = batch > 1
-            self.operators = install_inference(self.model, fp16_state=False, int8_mlp_b1=False)
+            self.operators = install_inference(self.model)
             from model.inference_kernels import cuda_graph_generate_top20_dynamic_refill
             self.benchmark_generate = cuda_graph_generate_top20_dynamic_refill
             if profile == 'fast':

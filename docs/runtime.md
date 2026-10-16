@@ -45,7 +45,7 @@ The benchmark uses synthetic tokens, a separate 256-token warmup, EOS disabled, 
 
 ## Measured results
 
-The following tables reproduce the latest report. They are measurements of the frozen implementation used in the report, not new measurements of a different checkpoint. Capability evaluation is separate from these fixed-length performance workloads.
+The following tables report fixed-length performance on one Hopper 80GB GPU with BF16 weights and KV, FP32 recurrent state, and tensor-parallel size one.
 
 ### End-to-end output throughput, 32K output
 

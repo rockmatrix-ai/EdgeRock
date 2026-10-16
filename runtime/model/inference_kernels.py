@@ -750,93 +750,6 @@ def enable_fused_swa_output_gate_inference(model: torch.nn.Module) -> int:
     model.config.fixed_memory_fused_swa_output_gate_inference = True
     return changed
 
-@triton.jit
-def _int8_group_mlp_gemv_kernel(X, W, S, Y, N: tl.constexpr, K: tl.constexpr, SPLIT: tl.constexpr, BN: tl.constexpr):
-    rows = tl.program_id(0) * BN + tl.arange(0, BN)
-    split = tl.program_id(1)
-    chunk = triton.cdiv(K, 256 * SPLIT) * 256
-    acc = tl.zeros((BN,), tl.float32)
-    for start in range(0, chunk, 256):
-        cols = split * chunk + start + tl.arange(0, 256)
-        x = tl.load(X + cols, cols < K, 0).to(tl.float32)
-        w = tl.load(W + rows[:, None] * K + cols[None, :], (rows[:, None] < N) & (cols[None, :] < K), 0).to(tl.float32)
-        group = (split * chunk + start) // 256
-        scale = tl.load(S + rows * triton.cdiv(K, 256) + group, (rows < N) & (group < triton.cdiv(K, 256)), 0)
-        acc += tl.sum(w * x[None, :], 1) * scale
-    tl.store(Y + split * N + rows, acc, rows < N)
-
-@triton.jit
-def _int8_group_mlp_reduce_kernel(P, Y, N: tl.constexpr, SPLIT: tl.constexpr):
-    rows = tl.program_id(0) * 256 + tl.arange(0, 256)
-    splits = tl.arange(0, SPLIT)
-    values = tl.load(P + splits[:, None] * N + rows[None, :], rows[None, :] < N, 0)
-    tl.store(Y + rows, tl.sum(values, 0), rows < N)
-
-def _int8_group_mlp_linear(values, weight, scales):
-    n, k = weight.shape
-    split = 4 if n < 8192 and k >= 4096 else 1
-    bn = 16 if n >= 8192 else 8
-    output = torch.empty((*values.shape[:-1], n), device=values.device, dtype=values.dtype)
-    partial = torch.empty((split, n), device=values.device, dtype=torch.float32) if split > 1 else output
-    _int8_group_mlp_gemv_kernel[triton.cdiv(n, bn), split](values, weight, scales, partial, n, k, split, bn, num_warps=4, num_stages=1)
-    if split > 1:
-        _int8_group_mlp_reduce_kernel[triton.cdiv(n, 256),](partial, output, n, split, num_warps=4)
-    return output
-
-@torch.no_grad()
-def _refresh_int8_group_mlp(module):
-    for name, weight in (('gate_up', module._qwen35_gate_up_weight), ('down', module.down_proj.weight)):
-        grouped = weight.float().reshape(weight.shape[0], -1, 256)
-        scales = grouped.abs().amax(-1).clamp_min(1e-12) / 127
-        quantized = torch.round(grouped / scales[:, :, None]).clamp(-127, 127).to(torch.int8)
-        for suffix, tensor in (('weight', quantized.reshape_as(weight)), ('scales', scales)):
-            key = f'_qwen35_int8_{name}_{suffix}'
-            if hasattr(module, key):
-                getattr(module, key).copy_(tensor)
-            else:
-                module.register_buffer(key, tensor.contiguous(), persistent=False)
-
-def _int8_mlp_decode_context_forward(model, *args, **kwargs):
-    ids = kwargs.get('input_ids', args[0] if args else None)
-    model._qwen35_int8_mlp_decode_context[0] = ids is not None and ids.shape[-1] == 1 and (kwargs.get('past_key_values') is not None)
-    try:
-        return model._qwen35_int8_mlp_previous_forward(*args, **kwargs)
-    finally:
-        model._qwen35_int8_mlp_decode_context[0] = False
-
-@torch.no_grad()
-def enable_int8_mlp_b1_inference(model: torch.nn.Module) -> int:
-    if not hasattr(model, '_qwen35_int8_mlp_decode_context'):
-        model._qwen35_int8_mlp_decode_context = [False]
-        model._qwen35_int8_mlp_previous_forward = model.forward
-        model.forward = MethodType(_int8_mlp_decode_context_forward, model)
-    changed = 0
-    for module in model.modules():
-        if hasattr(module, '_qwen35_gate_up_weight'):
-            _refresh_int8_group_mlp(module)
-            module._qwen35_int8_mlp_decode_context = model._qwen35_int8_mlp_decode_context
-            module._qwen35_int8_mlp_b1_enabled = True
-            changed += 1
-    model.config.fixed_memory_int8_mlp_b1 = True
-    return changed
-
-def _native_int8_mlp_forward(module, values, *args, **kwargs):
-    if module._qwen35_int8_mlp_decode_context[0] and values.numel() == values.shape[-1]:
-        gate_up = _int8_group_mlp_linear(values, module._qwen35_int8_gate_up_weight, module._qwen35_int8_gate_up_scales)
-        hidden = triton_qwen35_silu_mul(gate_up, gate_up.shape[-1] // 2)
-        return _int8_group_mlp_linear(hidden, module._qwen35_int8_down_weight, module._qwen35_int8_down_scales)
-    return module._qwen35_native_mlp_forward(values, *args, **kwargs)
-
-@torch.no_grad()
-def enable_native_int8_mlp_b1(model, decode_context):
-    for module in model.modules():
-        if hasattr(module, 'gate_up_proj') and hasattr(module, 'down_proj'):
-            module._qwen35_gate_up_weight = module.gate_up_proj.weight.detach()
-            _refresh_int8_group_mlp(module)
-            module._qwen35_int8_mlp_decode_context = decode_context
-            module._qwen35_native_mlp_forward = module.forward
-            module.forward = MethodType(_native_int8_mlp_forward, module)
-
 def _native_packed_qkvz_forward(module, values, *args, **kwargs):
     if module._qwen35_decode_context[0] and values.numel() == values.shape[-1]:
         projected = F.linear(values, module._qwen35_qkvz_ba_weight)
@@ -866,10 +779,6 @@ def enable_native_packed_gdn_b1(model, decode_context):
 def _packed_mlp_forward(module, values: torch.Tensor) -> torch.Tensor:
     if not getattr(module, '_qwen35_packed_mlp_enabled', True):
         return module._qwen35_eager_forward(values)
-    if getattr(module, '_qwen35_int8_mlp_b1_enabled', False) and module._qwen35_int8_mlp_decode_context[0] and (values.numel() == values.shape[-1]):
-        gate_up = _int8_group_mlp_linear(values, module._qwen35_int8_gate_up_weight, module._qwen35_int8_gate_up_scales)
-        hidden = triton_qwen35_silu_mul(gate_up, module.intermediate_size)
-        return _int8_group_mlp_linear(hidden, module._qwen35_int8_down_weight, module._qwen35_int8_down_scales)
     gate_up = F.linear(values, module._qwen35_gate_up_weight)
     if getattr(module, '_qwen35_fused_mlp_activation_enabled', False):
         return module.down_proj(triton_qwen35_silu_mul(gate_up, module.intermediate_size))
@@ -885,8 +794,6 @@ def refresh_packed_mlp_inference(model: torch.nn.Module) -> int:
         width = int(module.intermediate_size)
         module._qwen35_gate_up_weight[:width].copy_(module.gate_proj.weight)
         module._qwen35_gate_up_weight[width:].copy_(module.up_proj.weight)
-        if getattr(module, '_qwen35_int8_mlp_b1_enabled', False):
-            _refresh_int8_group_mlp(module)
         refreshed += 1
     return refreshed
 
@@ -1076,16 +983,10 @@ def enable_bf16_b1_lm_head_inference(model: torch.nn.Module) -> int:
     model.config.fixed_memory_bf16_b1_lm_head = True
     return 1
 
-def install_inference(model, *, fp16_state=False, int8_mlp_b1=False) -> dict[str, int | str | bool]:
+def install_inference(model) -> dict[str, int | str | bool]:
     gdn_bv, gdn_warps = (128, 4)
-    recurrent_storage = 'fp16_non_anchor' if fp16_state else 'fp32'
+    recurrent_storage = 'fp32'
     stack = {'fixed_memory_operator_profile': 'max_throughput', 'operator_revision': 'independent-gqa-grouped-fused-decode-v6', 'memory_backend': 'triton_direct_indexed_gqa', 'memory_decode_backend': 'triton_committed_gqa_masked_commit', 'memory_cache_dtype': 'bfloat16', 'packed_memory_layers': enable_independent_memory_packed_projections(model), 'packed_mlp_layers': enable_packed_mlp_inference(model), 'fused_mlp_activation_layers': enable_fused_mlp_activation_inference(model), 'packed_native_gdn_layers': enable_packed_all_native_gdn_inference(model), 'packed_all_native_gdn': True, 'graph_safe_conv_layers': enable_triton_graph_safe_conv_update(model), 'packed_swa_projection_layers': enable_packed_swa_projection_inference(model), 'native_rmsnorm_layers': enable_native_rmsnorm_inference(model, torch_tree=True), 'rmsnorm_reduction': 'torch_fp32_tree_fused', 'fused_residual_rmsnorm_layers': enable_fused_residual_rmsnorm_inference(model), 'fused_swa_output_gate_layers': enable_fused_swa_output_gate_inference(model), 'inplace_native_gdn_state': enable_inplace_native_gdn_state_inference(gdn_bv, gdn_warps, adaptive=True), 'gdn_block_value': gdn_bv, 'gdn_num_warps': gdn_warps, 'gdn_small_batch_block_value': 32, 'fused_gdn_gate_layers': enable_fused_gdn_gate_inference(model, grouped_query=True), 'gdn_grouped_query_decode': True, 'physical_ring_swa_layers': enable_physical_ring_fixed_memory_swa_update(model), 'swa_backend': 'physical', 'gdn_recurrent_state_storage': recurrent_storage, 'fused_decode_state': True, 'bf16_b1_lm_head': enable_bf16_b1_lm_head_inference(model)}
-    if int8_mlp_b1:
-        stack['int8_mlp_b1_layers'] = enable_int8_mlp_b1_inference(model)
-        stack['int8_mlp_group_size'] = 256
-        stack['int8_mlp_down_split_k'] = 4
-        stack['int8_mlp_up_tile'] = 16
-        stack['operator_revision'] += '-int8-mlp-b1-up16'
     model.config.fixed_memory_operator_profile = 'max_throughput'
     model.config.fixed_memory_operator_revision = stack['operator_revision']
     model.config.gdn_recurrent_state_storage = recurrent_storage

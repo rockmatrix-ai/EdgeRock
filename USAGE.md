@@ -2,7 +2,7 @@
 
 [Model overview](README.md) · [Runtime and measurement protocol](docs/runtime.md) · [Full results](docs/results.md)
 
-This repository provides inference and evaluation code. Download the matching checkpoint from [Hugging Face](https://huggingface.co/rockmatrix-ai/EdgeRock). Run the commands below from this repository's root and pass the checkpoint directory with `--model`.
+This repository provides inference and evaluation code. Download the matching checkpoint from [Hugging Face](https://huggingface.co/stonehill-tech/EdgeRock). Run the commands below from this repository's root and pass the checkpoint directory with `--model`.
 
 ## Installation
 
@@ -12,7 +12,7 @@ Install PyTorch for your platform, then install the bundled Transformers depende
 python -m venv .venv
 source .venv/bin/activate
 python -m pip install ./wheels/transformers-5.7.0.dev0-py3-none-any.whl -e .
-hf download rockmatrix-ai/EdgeRock --local-dir checkpoints/EdgeRock-4B \
+hf download stonehill-tech/EdgeRock --local-dir checkpoints/EdgeRock-4B \
   --include '*.safetensors' '*.json' '*.jinja' 'tokenizer*' 'vocab*' 'merges*' \
   --exclude 'evaluation_data/*'
 cp config.json configuration_edgerock.py modeling_edgerock.py checkpoints/EdgeRock-4B/
@@ -107,7 +107,7 @@ The server supports `GET /v1/models`, text chat completions, SSE streaming, and 
 | `fast`, every batch size | BF16, unquantized | BF16 | FP32 |
 | `reference`, CUDA BF16 | BF16, unquantized | BF16 | FP32 |
 
-`fast` enables the selected BF16 optimizations and, at batch size 512, shared packed-weight storage. `reference` retains reference local-attention arithmetic. Neither profile silently selects INT8 MLP or FP16 recurrent state. The report uses the fast profile; all history remains on the GPU, and decoding is not speculative.
+`fast` enables the selected BF16 optimizations and, at batch size 512, shared packed-weight storage. `reference` retains reference local-attention arithmetic. Both profiles retain BF16 MLP computation and FP32 recurrent state. The report uses the fast profile; all history remains on the GPU, and decoding is not speculative.
 
 ## Reproduce fixed-length performance workloads
 
@@ -183,7 +183,7 @@ Set request and Mamba-slot capacities together: anchor-state allocation follows 
 Download evaluation inputs and the visual frontend into the checkpoint directory, then install the evaluation dependencies:
 
 ```bash
-hf download rockmatrix-ai/EdgeRock --local-dir checkpoints/EdgeRock-4B \
+hf download stonehill-tech/EdgeRock --local-dir checkpoints/EdgeRock-4B \
   --include 'evaluation_data/*' 'vision/*'
 python -m pip install -e '.[evaluation]'
 

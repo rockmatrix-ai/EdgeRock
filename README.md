@@ -6,7 +6,7 @@
   <p>
     <a href="docs/report/EdgeRock_Technical_Report.pdf"><b>Technical Report</b></a>
     &nbsp; · &nbsp;
-    <a href="https://huggingface.co/rockmatrix-ai/EdgeRock"><b>Model Weights</b></a>
+    <a href="https://huggingface.co/stonehill-tech/EdgeRock"><b>Model Weights</b></a>
     &nbsp; · &nbsp;
     <a href="USAGE.md"><b>Inference Guide</b></a>
     &nbsp; · &nbsp;
@@ -37,7 +37,7 @@ cd EdgeRock
 python -m venv .venv
 source .venv/bin/activate
 python -m pip install ./wheels/transformers-5.7.0.dev0-py3-none-any.whl -e .
-hf download rockmatrix-ai/EdgeRock --local-dir checkpoints/EdgeRock-4B \
+hf download stonehill-tech/EdgeRock --local-dir checkpoints/EdgeRock-4B \
   --include '*.safetensors' '*.json' '*.jinja' 'tokenizer*' 'vocab*' 'merges*' \
   --exclude 'evaluation_data/*'
 cp config.json configuration_edgerock.py modeling_edgerock.py checkpoints/EdgeRock-4B/

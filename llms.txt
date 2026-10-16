@@ -9,7 +9,7 @@ Persistent history is O(1) with respect to sequence length at fixed model and me
 - [Overview and FAQ](https://raw.githubusercontent.com/rockmatrix-ai/EdgeRock/main/README.md): model definition, memory-anchor mechanism, headline results, and common questions.
 - [Evaluation results](https://raw.githubusercontent.com/rockmatrix-ai/EdgeRock/main/docs/results.md): text and image benchmarks, comparison groups, and evaluation protocol.
 - [Inference runtime and results](https://raw.githubusercontent.com/rockmatrix-ai/EdgeRock/main/docs/runtime.md): BF16 execution, FP32 recurrence, constant history, throughput definitions, and measured workloads.
-- [Model weights](https://huggingface.co/rockmatrix-ai/EdgeRock): official EdgeRock-4B checkpoint and model card.
+- [Model weights](https://huggingface.co/stonehill-tech/EdgeRock): official EdgeRock-4B checkpoint and model card.
 
 ## Implementation and citation
 

@@ -5,7 +5,6 @@ def install(model):
     """Install the selected BF16 fusion stack before prefill on a BF16/FP32 runtime."""
     assert model.config.gdn_recurrent_state_storage == 'fp32'
     assert all(p.is_cuda and p.dtype == torch.bfloat16 for p in model.parameters())
-    assert not any(getattr(m, '_qwen35_int8_mlp_b1_enabled', False) for m in model.modules())
     from . import b1_bf16_fusions
     b1_bf16_fusions.install(model)
     from . import b1_runtime_joint_projection

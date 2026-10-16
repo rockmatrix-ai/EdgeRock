@@ -9,7 +9,7 @@
   "components": {
     "b1_bf16_selected.py": {
       "report_source_sha256": "82d7484627684ed3c2375a8d0339497399e67cf24ae705cddb45215cfe75f57d",
-      "release_sha256": "c97047180dacd51e8d7ec86856232b00d0edee4755bcb76e7071ec3a6b526259"
+      "release_sha256": "392d4980127b595059d6840f3aa802840f757ac7eb026fe01ad89be90ee6c367"
     },
     "b1_bf16_fusions.py": {
       "report_source_sha256": "9cd816ae32ee03e312445291dd859ff41b43acee94ee916de1e213db98d11a9b",

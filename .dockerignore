@@ -7,3 +7,6 @@ outputs
 .DS_Store
 docs
 assets
+*.safetensors
+evaluation_data
+vision
