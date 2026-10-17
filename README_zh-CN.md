@@ -1,40 +1,33 @@
 <div align="center">
-  <img src="assets/rockmatrix.png" alt="Rock Matrix" width="64" />
-  <h1>EdgeRock</h1>
-  <h3>恒定显存下的强大推理能力</h3>
-  <p>Rock Matrix</p>
-  <p><a href="README.md">English</a> | <b>简体中文</b></p>
+  <h1><img src="assets/rockmatrix-transparent.png" alt="" width="44" height="44" align="absmiddle" /> EdgeRock</h1>
+  <p><strong>恒定显存下的强大推理能力</strong><br /><sub>ROCK MATRIX</sub></p>
+  <p><a href="README.md">English</a> · <b>简体中文</b></p>
   <p>
-    <a href="docs/report/EdgeRock_Technical_Report.pdf"><b>技术报告（English）</b></a>
-    &nbsp; · &nbsp;
-    <a href="docs/report/EdgeRock_Technical_Report_zh-CN.pdf"><b>技术报告（中文）</b></a>
-    &nbsp; · &nbsp;
-    <a href="https://arxiv.org/abs/2610.10118"><b>arXiv:2610.10118</b></a>
-    &nbsp; · &nbsp;
-    <a href="https://github.com/rockmatrix-ai/EdgeRock"><b>GitHub</b></a>
-    &nbsp; · &nbsp;
-    <a href="https://huggingface.co/rockmatrix-ai/EdgeRock"><b>Hugging Face</b></a>
-    &nbsp; · &nbsp;
-    <a href="https://modelscope.cn/models/rockmatrix/EdgeRock"><b>ModelScope</b></a>
+    <a href="docs/report/EdgeRock_Technical_Report_zh-CN.pdf"><img src="assets/readme-report-zh.svg" alt="技术报告" height="30" /></a>
+    <a href="https://huggingface.co/rockmatrix-ai/EdgeRock"><img src="assets/readme-huggingface.svg" alt="Hugging Face" height="30" /></a>
+    <a href="https://modelscope.cn/models/rockmatrix/EdgeRock"><img src="assets/readme-modelscope.svg" alt="ModelScope" height="30" /></a>
   </p>
 </div>
 
-**EdgeRock 是一个在恒定显存下提供强大推理能力的多模态模型系列。** EdgeRock-4B 是首个开源版本，支持文本和图像推理，更多参数规模的模型正在准备中。
+**EdgeRock 让强大推理能力与恒定历史内存兼得。** 首个开源模型 EdgeRock-4B 支持文本与图像推理，将长程推理的历史状态控制在固定容量内，为持续推理和高并发服务留出更多显存。更多模型尺寸正在准备中。
 
-长程推理会使 KV 缓存持续增长，占用加速器显存，并限制服务并发。在边缘设备上，推理还需要与感知、控制任务共享内存。EdgeRock 将历史状态控制在固定容量内：循环状态概括上下文，局部注意力处理近期 token，**Rock Memory Anchors（RMA）** 则保留可直接检索的远程细节。
+- **强数学推理：** AIME 平均 pass@1 达到 **82.9%**，参与评测的有界状态基线中最高为 18.8%。
+- **O(1) 历史内存：** 每条序列的注意力 KV 固定为 **72 MiB**，比 Qwen3.5-4B 减少 **99.1%**。
+- **更高服务吞吐：** 最佳实测 batch 下，输出吞吐达到 Qwen3.5-4B 的 **6.42 倍**。
 
-- **恒定历史状态下的强大推理能力：** EdgeRock-4B 在 AIME 2024–2026 上的平均 pass@1 达到 82.9%，而参与评测的有界状态基线中，AIME 表现最强的 14B 级 RWKV-7 G1j 为 18.8%。[查看能力结果](#strong-reasoning-within-the-bounded-state-class)。
-- **固定容量的 KV 存储：** EdgeRock-4B 每条序列的注意力 KV 占用为 72 MiB，批量运行时的持久历史状态总计 97.76 MiB。在 256K 上下文下，其 BF16 注意力 KV 比 **Qwen3.5-4B 减少 99.1%**。[查看显存构成](#constant-history-and-gpu-memory)。
-- **持续高效推理：** 在单张 Hopper 80GB GPU 上，EdgeRock-4B 在 128K 输入、128K 输出、batch size 为 1 时，持续解码速度达到 **233.7 token/s**。在 32K 输入、32K 输出下，各模型采用各自吞吐最高的实测 batch size，EdgeRock-4B 的端到端输出吞吐达到 **Qwen3.5-4B 的 6.42 倍**。[查看运行性能](#inference-efficiency)。
-- **文本与图像推理：** EdgeRock-4B 在六项视觉评测上的**平均答案准确率为 84.9%**，保留了 **Qwen3.5-4B 平均准确率的 95.3%**。[查看视觉结果](#visual-reasoning)。
+[快速开始](#quick-start) · [核心结果](#capability) · [RMA 原理](#how-rock-memory-anchors-work) · [文档与引用](#documentation)
 
-![EdgeRock-4B：AIME 推理、恒定注意力 KV 存储与 Hopper 80GB 推理吞吐](assets/hero_capability.png)
+![EdgeRock-4B：推理能力、恒定 KV 内存与推理效率](assets/hero_capability.png)
 
-吞吐量**仅统计输出 token**；端到端耗时包含预填充。运行性能对比使用 BF16 权重与 KV，以及普通自回归解码。EdgeRock-4B 在 batch size 为 1 时使用 FP32 GDN 状态，其余 batch 使用 FP16 状态存储，更新计算均保持 FP32；Qwen3.5-4B 使用 FP32 GDN 状态。下文分别列出有界状态模型、源模型能力保留和小型模型对比结果。
+*AIME 为 2024–2026 三年平均 pass@1；KV 对比采用 256K 上下文。服务吞吐在单张 Hopper 80GB 上以 32K 输入、32K 输出测得，各模型采用最佳实测 batch；仅统计输出 token，耗时包含预填充。*
 
-[模型架构](#how-rock-memory-anchors-work) · [模型能力](#capability) · [推理效率](#inference-efficiency) · [完整评测表](#full-text-benchmark-tables) · [常见问题](#frequently-asked-questions) · [引用](#citation)
+<a id="quick-start"></a>
 
 ## 快速开始
+
+| 模型 | 输入模态 | 模型权重 |
+| --- | --- | --- |
+| **EdgeRock-4B** | 文本、图像 | [Hugging Face](https://huggingface.co/rockmatrix-ai/EdgeRock) · [ModelScope](https://modelscope.cn/models/rockmatrix/EdgeRock) |
 
 ```bash
 git clone https://github.com/rockmatrix-ai/EdgeRock.git
@@ -50,32 +43,7 @@ python run.py demo --model checkpoints/EdgeRock-4B \
   --prompt 'Solve 17 × 23, explaining your reasoning.' --max-new-tokens 2048
 ```
 
-通用后端支持通过 PyTorch 在 CPU 和 CUDA 上运行。Hopper 优化路径需要安装[推理指南](USAGE.md)中列出的额外依赖。**fast** 配置使用 BF16 权重与 KV；batch size 为 1 时使用 FP32 GDN 状态，批量运行时使用 FP16 状态存储，更新计算均保持 FP32，不使用 INT8。
-
-<a id="how-rock-memory-anchors-work"></a>
-
-## Rock Memory Anchors 的工作原理
-
-**记忆锚点**是一条经学习生成、存放于固定容量记忆库中的键值记录。当原始信息离开局部注意力窗口后，后续查询仍可检索这条记录。写入器决定记录表达的内容，准入机制决定保留哪些记录，检索机制决定已存信息如何参与当前计算。
-
-![EdgeRock-4B 架构：循环状态、滑动窗口注意力和 Rock Memory Anchors](assets/architecture_overview.png)
-
-EdgeRock-4B 改造了 Qwen3.5-4B 骨干中的八层全注意力，同时保留 24 层 Gated DeltaNet 和前馈模块：
-
-```text
-[GDN, GDN, GDN, sliding-window attention ∥ RMA] × 8
-```
-
-| 历史状态组成 | 作用 | 容量 |
-| --- | --- | --- |
-| 循环状态 | 概括变化中的上下文 | 固定维度矩阵 |
-| 局部注意力 | 处理近期 token 之间的交互 | 1,024 个位置 |
-| RMA 锚点库 | 保留可独立检索的远程记录 | 每个 KV 组 1,024 条记录 |
-| 待提交候选 | 收集下次准入更新的候选记录 | 256 个位置 |
-
-学习得到的写入器生成专用键值记录。每处理 256 个 token，准入机制在四个 KV 组中分别保留优先级最高的记录。查询读取**已提交**的记忆库，新选中的记录从下一个块开始可见。保留的记录保持独立，内容不被改写。依赖查询的读取与有符号门控将检索信息和局部注意力结合起来。
-
-持久历史状态的各个组成部分都具有固定容量。历史存储相对于序列长度的复杂度为 **O(1)**；在模型与记忆维度固定时，有界历史访问使 N 个输出 token 的生成计算量为 **O(N)**。总显存还包括模型权重、输入输出缓冲区、CUDA Graphs 和工作空间。
+优化推理与服务部署见[推理指南](USAGE.md)。
 
 <a id="capability"></a>
 
@@ -83,9 +51,12 @@ EdgeRock-4B 改造了 Qwen3.5-4B 骨干中的八层全注意力，同时保留 2
 
 <a id="strong-reasoning-within-the-bounded-state-class"></a>
 
-### 有界状态模型中的强大推理能力
+### 恒定历史内存下的强大推理
 
 EdgeRock-4B 在恒定显存下实现了强大的数学推理能力：**AIME 2024–2026 的平均 pass@1 为 82.9%**，参与评测的有界状态基线中最强结果为 18.8%。在全部 29 项文本评测中，EdgeRock-4B 在 24 项上领先，等权均分为 **77.2%**，高于 AHN-GDN Qwen2.5 14B 23.8 个百分点。
+
+<details>
+<summary>查看全部 17 个有界状态模型</summary>
 
 ![有界状态模型能力：17 个模型的全部评测均分与 AIME 均分](assets/bounded_comparison.png)
 
@@ -111,7 +82,11 @@ EdgeRock-4B 在恒定显存下实现了强大的数学推理能力：**AIME 2024
 | xLSTM 7B | 16.0 | 0.0 | 25.0 | 4.6 | 2.2 | 34.0 |
 | ARWKV-R1 1.5B | 9.9 | 0.0 | 13.6 | 7.5 | 0.3 | 11.1 |
 
-### 小型模型中的综合竞争力
+</details>
+
+<a id="compact-model-comparison"></a>
+
+### 与主流小模型的对比
 
 EdgeRock-4B 在保持**恒定持久历史状态**的同时，具备有竞争力的数学、知识、代码和指令遵循能力。在 29 项文本评测中，有 28 项超过 LFM2.5-2.6B。下表对比模型的历史状态均随序列增长。AIME 为 2024–2026 三个年份的等权均分；粗体表示每列最高值。
 
@@ -125,9 +100,14 @@ EdgeRock-4B 在保持**恒定持久历史状态**的同时，具备有竞争力�
 | MiniCPM5-2B | **87.8** | 65.3 | 40.9 | 67.7 | **83.3** | 86.3 |
 | LFM2.5-2.6B | 56.2 | 59.9 | 27.1 | 58.2 | 59.7 | **93.3** |
 
-### 架构转换后的推理能力保留
+<a id="backbone-retention"></a>
+
+### 源模型能力保留
 
 在以固定容量历史状态替换全注意力后，EdgeRock-4B 保留了 Qwen3.5-4B 骨干 **96.3%** 的 AIME 平均分。其 MATH-500 准确率为 **97.5%**，并在包括 MMLU-Pro、SuperGPQA、HumanEval 和 MBPP 在内的八项文本评测中超过骨干模型。
+
+<details>
+<summary>查看完整能力保持结果</summary>
 
 ![架构转换后的能力：EdgeRock-4B 与 Qwen3.5-4B 在全部 29 项文本评测上的对比](assets/backbone_delta.png)
 
@@ -178,11 +158,16 @@ EdgeRock-4B 在保持**恒定持久历史状态**的同时，具备有竞争力�
 | HMMT Feb 2025 | 71.8 | **74.6** |
 | HMMT Nov 2025 | 69.8 | **78.3** |
 
+</details>
+
 <a id="visual-reasoning"></a>
 
 ### 视觉推理
 
 EdgeRock-4B 支持文本与图像推理，视觉评测等权平均准确率达到 **84.9%**，保留了 Qwen3.5-4B 平均准确率的 **95.3%**。
+
+<details>
+<summary>查看六项视觉评测与 MME 分数</summary>
 
 下表为六项视觉评测的答案准确率，单位为百分比。保留比例为 EdgeRock-4B 分数除以 Qwen3.5-4B 分数。粗体表示每行较高的准确率。
 
@@ -204,11 +189,167 @@ MME 答案准确率与标准 MME 分数反映不同维度的表现。标准 MME 
 | 认知（分） | 728.2 | **751.8** |
 | 总计（分） | 2,328.7 | **2,490.1** |
 
+</details>
+
+<a id="inference-efficiency"></a>
+
+## 推理效率
+
+以下结果均在单张 Hopper 80GB GPU 上测得。
+
+<a id="constant-history-and-gpu-memory"></a>
+
+### 恒定历史状态与显存占用
+
+EdgeRock-4B 的注意力 KV 相对于序列长度保持 **O(1)**。每条序列固定占用 72 MiB，在 256K 上下文下比 Qwen3.5-4B 的全注意力 KV **减少 99.1%**。下表为根据配置计算的 BF16 注意力 KV 容量，不含模型权重与循环状态。
+
+| 模型 | 32K 上下文（MiB） | 64K 上下文（MiB） | 128K 上下文（MiB） | 256K 上下文（MiB） | 历史状态增长 |
+| --- | ---: | ---: | ---: | ---: | --- |
+| **EdgeRock-4B** | **72** | **72** | **72** | **72** | **O(1)** |
+| Qwen3.5-4B | 1,024 | 2,048 | 4,096 | 8,192 | O(N) |
+
+<details>
+<summary>显存构成、实测分配与测试设置</summary>
+
+![显存扩展：并发变化及固定 batch 下的输入长度变化](assets/memory_capacity.png)
+
+
+**批量运行时每条序列的持久历史状态。** 各项容量固定；局部环形缓存保存此前的 1,023 个位置，解码器提供当前 token。
+
+| 组成 | 每序列 MiB |
+| --- | ---: |
+| 已提交 RMA 锚点 | 32.00 |
+| 待提交 RMA 候选 | 8.00 |
+| 局部窗口 KV | 31.97 |
+| FP16 循环矩阵 | 24.00 |
+| 卷积状态 | 1.50 |
+| 元数据 | 0.29 |
+| **持久历史状态合计** | **97.76** |
+
+实测显存分配包括模型权重、历史状态、输入输出缓冲区和执行工作空间。单请求 128K 输入、128K 输出时，分配峰值为 **16.02 GiB**；batch size 512 的长生成测试中，峰值为 **61.26 GiB**。图中展示了 4K 输入 + 2K 输出下的并发扩展，以及 4K–32K 输入、32K 输出下的显存分配。
+
+**运行性能测试设置。** 1K = 1,024 token。EdgeRock 各配置独立运行三次，单项工作负载结果取中位数；加权 batch 速度汇总 16 种长度组合及三次重复。计时不含模型加载、预热、分词和文本解码。测试使用合成 token，单独进行 256-token 预热，忽略 EOS，temperature 为 1.0、top-k 为 20、top-p 为 0.95、presence penalty 为 1.5。batch 网格中，每个输入提示由八条续写共享，各续写保留独立历史状态。batch size 表示提交的请求数；EdgeRock 维持目标并发，vLLM 则在缓存预算内调度。
+
+以下结果均在单张 **Hopper 80GB GPU** 上获得，使用 BF16 权重与 KV、普通自回归解码，状态驻留 GPU。EdgeRock-4B 在 batch size 为 1 时使用 FP32 GDN 状态，其余 batch 使用 FP16 状态存储，更新计算均保持 FP32；Qwen3.5-4B 使用 FP32 GDN 状态。EdgeRock 将 CUDA Graphs 与融合 BF16 算子结合，并共享原始投影与打包投影的权重存储，消除 4.95 GiB 的重复权重，在保持历史容量不变的情况下支持 batch size 512。
+
+通用后端支持通过 PyTorch 在 CPU 和 CUDA 上运行。Hopper 优化路径需要安装[推理指南](USAGE.md)中列出的额外依赖。**fast** 配置使用 BF16 权重与 KV；batch size 为 1 时使用 FP32 GDN 状态，批量运行时使用 FP16 状态存储，更新计算均保持 FP32，不使用 INT8。
+
+</details>
+
+### 单请求解码与服务吞吐
+
+![长上下文推理：单请求解码与最佳 batch 输出吞吐](assets/runtime_scaling.png)
+
+#### 最佳 batch 服务吞吐
+
+**最佳 batch 服务吞吐：输出长度为 32K。** 表中数值为输出 token/s，括号中为吞吐最高的实测 batch size。分子**仅统计输出 token**，耗时**包含预填充**。在 32K 输入 + 32K 输出下，EdgeRock-4B 的端到端输出吞吐为 Qwen3.5-4B 的 **6.42 倍**。
+
+| 模型 | 4K 输入 | 8K 输入 | 16K 输入 | 32K 输入 |
+| --- | ---: | ---: | ---: | ---: |
+| **EdgeRock-4B** | **12,479** (512) | **12,325** (512) | **12,330** (512) | **12,124** (512) |
+| Qwen3.5-4B | 3,103 (64) | 2,853 (64) | 2,472 (64) | 1,889 (64) |
+| Gemma 4 E4B | 3,940 (128) | 3,432 (128) | 2,880 (128) | 2,196 (64) |
+| MiniCPM5-2B | 3,152 (64) | 2,938 (64) | 2,575 (32) | 2,117 (32) |
+| LFM2.5-2.6B | 1,673 (64) | 1,771 (64) | 1,695 (32) | 1,727 (64) |
+
+在这四种工作负载上，EdgeRock-4B 相对 Qwen3.5-4B 的平均吞吐倍数为 **4.94 倍**，相对 LFM2.5-2.6B 为 **7.18 倍**。各模型在每个输入长度下均采用吞吐最高的实测 batch size。
+
+#### 单请求解码
+
+**单请求：128K 输入 + 128K 输出，batch size = 1。** 解码速度不含预填充，从首个输出 token 之后开始统计，包含采样与状态更新。EdgeRock-4B 持续达到 **233.7 token/s**，为 Qwen3.5-4B 的 **1.54 倍**。
+
+| 模型 | 解码 token/s |
+| --- | ---: |
+| **EdgeRock-4B** | **233.7** |
+| Qwen3.5-4B | 151.3 |
+| Gemma 4 E4B | 133.8 |
+| MiniCPM5-2B | 164.5 |
+| LFM2.5-2.6B | 229.6 |
+
+在同为 256K 总长度的 **254K 输入 + 2K 输出**配置下，EdgeRock-4B 的解码速度为 **226.6 token/s**，Qwen3.5-4B 为 133.9 token/s，前者为后者的 **1.69 倍**。
+
+### 并发扩展能力
+
+EdgeRock-4B 在单张 Hopper 80GB 上支持 **512 条长生成序列并发**。跨 16 种输入输出长度组合，加权解码吞吐为 **12,497 token/s**，显存分配峰值为 **61.26 GiB**。
+
+<details>
+<summary>并发曲线与完整 batch 测试</summary>
+
+![并发扩展：batch size 32–512 的总解码速度与单序列速度](assets/batch_scaling.png)
+
+在 4K、8K、16K、32K 输入和输出长度构成的全部 16 种组合中，EdgeRock-4B 均支持 **512 条序列并发**。加权解码吞吐为首个 token 之后的输出 token 总数除以总解码时间；单序列速度为总吞吐除以 batch size。显存列报告对应工作负载中的最大值。
+
+| Batch size | 加权解码 token/s | 单序列 token/s | 分配峰值 GiB | 预留峰值 GiB |
+| ---: | ---: | ---: | ---: | ---: |
+| 32 | 4,128 | 129.0 | 18.94 | 19.49 |
+| 64 | 6,685 | 104.5 | 20.16 | 21.80 |
+| 128 | 9,049 | 70.7 | 26.74 | 27.92 |
+| 256 | 11,231 | 43.9 | 39.90 | 41.77 |
+| 320 | 11,074 | 34.6 | 46.49 | 50.69 |
+| 384 | 12,099 | 31.5 | 53.06 | 57.27 |
+| 512 | **12,497** | 24.4 | 61.26 | 66.97 |
+
+</details>
+
+### 短上下文解码
+
+在 4K 输入、2K 输出下，解码速度从 batch size 1 的 **229.6 token/s** 扩展至 batch size 512 的 **12,481 token/s**，不含预填充。
+
+<details>
+<summary>查看短上下文测试</summary>
+
+**4K 输入 + 2K 输出。** 解码速度不含预填充。batch size 为 1–512 时均使用 BF16 权重与 KV；batch size 为 1 时使用 FP32 GDN 状态，其余 batch 使用 FP16 状态存储，更新计算均保持 FP32。
+
+| Batch size | 解码 token/s | 单序列 token/s | 分配峰值 GiB |
+| ---: | ---: | ---: | ---: |
+| 1 | 230 | 229.6 | 14.27 |
+| 2 | 358 | 178.8 | 14.27 |
+| 4 | 692 | 172.9 | 14.27 |
+| 8 | 1,322 | 165.2 | 14.40 |
+| 16 | 2,442 | 152.6 | 15.21 |
+| 32 | 4,053 | 126.7 | 16.84 |
+| 64 | 6,698 | 104.7 | 20.10 |
+| 128 | 9,066 | 70.8 | 26.60 |
+| 256 | 11,100 | 43.4 | 39.62 |
+| 320 | 11,062 | 34.6 | 46.14 |
+| 384 | 12,086 | 31.5 | 52.64 |
+| 512 | **12,481** | 24.4 | 60.71 |
+
+</details>
+
+<a id="how-rock-memory-anchors-work"></a>
+
+## RMA 工作原理
+
+**记忆锚点**是一条经学习生成、存放于固定容量记忆库中的键值记录。当原始信息离开局部注意力窗口后，后续查询仍可检索这条记录。写入器决定记录表达的内容，准入机制决定保留哪些记录，检索机制决定已存信息如何参与当前计算。
+
+![EdgeRock-4B 架构：循环状态、滑动窗口注意力和 Rock Memory Anchors](assets/architecture_overview.png)
+
+EdgeRock-4B 改造了 Qwen3.5-4B 骨干中的八层全注意力，同时保留 24 层 Gated DeltaNet 和前馈模块：
+
+```text
+[GDN, GDN, GDN, sliding-window attention ∥ RMA] × 8
+```
+
+| 历史状态组成 | 作用 | 容量 |
+| --- | --- | --- |
+| 循环状态 | 概括变化中的上下文 | 固定维度矩阵 |
+| 局部注意力 | 处理近期 token 之间的交互 | 1,024 个位置 |
+| RMA 锚点库 | 保留可独立检索的远程记录 | 每个 KV 组 1,024 条记录 |
+| 待提交候选 | 收集下次准入更新的候选记录 | 256 个位置 |
+
+学习得到的写入器生成专用键值记录。每处理 256 个 token，准入机制在四个 KV 组中分别保留优先级最高的记录。查询读取**已提交**的记忆库，新选中的记录从下一个块开始可见。保留的记录保持独立，内容不被改写。依赖查询的读取与有符号门控将检索信息和局部注意力结合起来。
+
+持久历史状态的各个组成部分都具有固定容量。历史存储相对于序列长度的复杂度为 **O(1)**；在模型与记忆维度固定时，有界历史访问使 N 个输出 token 的生成计算量为 **O(N)**。总显存还包括模型权重、输入输出缓冲区、CUDA Graphs 和工作空间。
+
 <a id="distant-memory-that-reasoning-can-use"></a>
 
-### 可用于推理的远程记忆
+### 远程记忆效果
 
 在 256 段输入长度为 16K–130,000 token 的上下文中，EdgeRock-4B 的远程记忆查询准确率为 **94.1%**，并在 **80.1%** 的上下文中正确回答全部四个问题。评测覆盖精确检索、状态更新、跨文档组合和变量绑定。
+
+<details>
+<summary>查看记忆评测与干预结果</summary>
 
 ![不同适配阶段及 RMA 开关设置下的远程记忆推理](assets/memory_diagnostic.png)
 
@@ -245,111 +386,16 @@ MME 答案准确率与标准 MME 分数反映不同维度的表现。标准 MME 
 | 答案应改变 | 230 / 256 | 89.8 |
 | 答案应保持不变 | 247 / 256 | 96.5 |
 
-<a id="inference-efficiency"></a>
-
-## 推理效率
-
-以下结果均在单张 **Hopper 80GB GPU** 上获得，使用 BF16 权重与 KV、普通自回归解码，状态驻留 GPU。EdgeRock-4B 在 batch size 为 1 时使用 FP32 GDN 状态，其余 batch 使用 FP16 状态存储，更新计算均保持 FP32；Qwen3.5-4B 使用 FP32 GDN 状态。EdgeRock 将 CUDA Graphs 与融合 BF16 算子结合，并共享原始投影与打包投影的权重存储，消除 4.95 GiB 的重复权重，在保持历史容量不变的情况下支持 batch size 512。
-
-### 单请求解码与服务吞吐
-
-![长上下文推理：单请求解码与最佳 batch 输出吞吐](assets/runtime_scaling.png)
-
-**单请求：128K 输入 + 128K 输出，batch size = 1。** 解码速度不含预填充，从首个输出 token 之后开始统计，包含采样与状态更新。EdgeRock-4B 持续达到 **233.7 token/s**，为 Qwen3.5-4B 的 **1.54 倍**。
-
-| 模型 | 解码 token/s |
-| --- | ---: |
-| **EdgeRock-4B** | **233.7** |
-| Qwen3.5-4B | 151.3 |
-| Gemma 4 E4B | 133.8 |
-| MiniCPM5-2B | 164.5 |
-| LFM2.5-2.6B | 229.6 |
-
-在同为 256K 总长度的 **254K 输入 + 2K 输出**配置下，EdgeRock-4B 的解码速度为 **226.6 token/s**，Qwen3.5-4B 为 133.9 token/s，前者为后者的 **1.69 倍**。
-
-**最佳 batch 服务吞吐：输出长度为 32K。** 表中数值为输出 token/s，括号中为吞吐最高的实测 batch size。分子**仅统计输出 token**，耗时**包含预填充**。在 32K 输入 + 32K 输出下，EdgeRock-4B 的端到端输出吞吐为 Qwen3.5-4B 的 **6.42 倍**。
-
-| 模型 | 4K 输入 | 8K 输入 | 16K 输入 | 32K 输入 |
-| --- | ---: | ---: | ---: | ---: |
-| **EdgeRock-4B** | **12,479** (512) | **12,325** (512) | **12,330** (512) | **12,124** (512) |
-| Qwen3.5-4B | 3,103 (64) | 2,853 (64) | 2,472 (64) | 1,889 (64) |
-| Gemma 4 E4B | 3,940 (128) | 3,432 (128) | 2,880 (128) | 2,196 (64) |
-| MiniCPM5-2B | 3,152 (64) | 2,938 (64) | 2,575 (32) | 2,117 (32) |
-| LFM2.5-2.6B | 1,673 (64) | 1,771 (64) | 1,695 (32) | 1,727 (64) |
-
-在这四种工作负载上，EdgeRock-4B 相对 Qwen3.5-4B 的平均吞吐倍数为 **4.94 倍**，相对 LFM2.5-2.6B 为 **7.18 倍**。各模型在每个输入长度下均采用吞吐最高的实测 batch size。
-
-### 并发扩展能力
-
-![并发扩展：batch size 32–512 的总解码速度与单序列速度](assets/batch_scaling.png)
-
-在 4K、8K、16K、32K 输入和输出长度构成的全部 16 种组合中，EdgeRock-4B 均支持 **512 条序列并发**。加权解码吞吐为首个 token 之后的输出 token 总数除以总解码时间；单序列速度为总吞吐除以 batch size。显存列报告对应工作负载中的最大值。
-
-| Batch size | 加权解码 token/s | 单序列 token/s | 分配峰值 GiB | 预留峰值 GiB |
-| ---: | ---: | ---: | ---: | ---: |
-| 32 | 4,128 | 129.0 | 18.94 | 19.49 |
-| 64 | 6,685 | 104.5 | 20.16 | 21.80 |
-| 128 | 9,049 | 70.7 | 26.74 | 27.92 |
-| 256 | 11,231 | 43.9 | 39.90 | 41.77 |
-| 320 | 11,074 | 34.6 | 46.49 | 50.69 |
-| 384 | 12,099 | 31.5 | 53.06 | 57.27 |
-| 512 | **12,497** | 24.4 | 61.26 | 66.97 |
-
-### 短上下文解码
-
-**4K 输入 + 2K 输出。** 解码速度不含预填充。batch size 为 1–512 时均使用 BF16 权重与 KV；batch size 为 1 时使用 FP32 GDN 状态，其余 batch 使用 FP16 状态存储，更新计算均保持 FP32。
-
-| Batch size | 解码 token/s | 单序列 token/s | 分配峰值 GiB |
-| ---: | ---: | ---: | ---: |
-| 1 | 230 | 229.6 | 14.27 |
-| 2 | 358 | 178.8 | 14.27 |
-| 4 | 692 | 172.9 | 14.27 |
-| 8 | 1,322 | 165.2 | 14.40 |
-| 16 | 2,442 | 152.6 | 15.21 |
-| 32 | 4,053 | 126.7 | 16.84 |
-| 64 | 6,698 | 104.7 | 20.10 |
-| 128 | 9,066 | 70.8 | 26.60 |
-| 256 | 11,100 | 43.4 | 39.62 |
-| 320 | 11,062 | 34.6 | 46.14 |
-| 384 | 12,086 | 31.5 | 52.64 |
-| 512 | **12,481** | 24.4 | 60.71 |
-
-<a id="constant-history-and-gpu-memory"></a>
-
-### 恒定历史状态与显存占用
-
-![显存扩展：并发变化及固定 batch 下的输入长度变化](assets/memory_capacity.png)
-
-EdgeRock-4B 的注意力 KV 相对于序列长度保持 **O(1)**。每条序列固定占用 72 MiB，在 256K 上下文下比 Qwen3.5-4B 的全注意力 KV **减少 99.1%**。下表为根据配置计算的 BF16 注意力 KV 容量，不含模型权重与循环状态。
-
-| 模型 | 32K 上下文（MiB） | 64K 上下文（MiB） | 128K 上下文（MiB） | 256K 上下文（MiB） | 历史状态增长 |
-| --- | ---: | ---: | ---: | ---: | --- |
-| **EdgeRock-4B** | **72** | **72** | **72** | **72** | **O(1)** |
-| Qwen3.5-4B | 1,024 | 2,048 | 4,096 | 8,192 | O(N) |
-
-**批量运行时每条序列的持久历史状态。** 各项容量固定；局部环形缓存保存此前的 1,023 个位置，解码器提供当前 token。
-
-| 组成 | 每序列 MiB |
-| --- | ---: |
-| 已提交 RMA 锚点 | 32.00 |
-| 待提交 RMA 候选 | 8.00 |
-| 局部窗口 KV | 31.97 |
-| FP16 循环矩阵 | 24.00 |
-| 卷积状态 | 1.50 |
-| 元数据 | 0.29 |
-| **持久历史状态合计** | **97.76** |
-
-实测显存分配包括模型权重、历史状态、输入输出缓冲区和执行工作空间。单请求 128K 输入、128K 输出时，分配峰值为 **16.02 GiB**；batch size 512 的长生成测试中，峰值为 **61.26 GiB**。图中展示了 4K 输入 + 2K 输出下的并发扩展，以及 4K–32K 输入、32K 输出下的显存分配。
-
-**运行性能测试设置。** 1K = 1,024 token。EdgeRock 各配置独立运行三次，单项工作负载结果取中位数；加权 batch 速度汇总 16 种长度组合及三次重复。计时不含模型加载、预热、分词和文本解码。测试使用合成 token，单独进行 256-token 预热，忽略 EOS，temperature 为 1.0、top-k 为 20、top-p 为 0.95、presence penalty 为 1.5。batch 网格中，每个输入提示由八条续写共享，各续写保留独立历史状态。batch size 表示提交的请求数；EdgeRock 维持目标并发，vLLM 则在缓存预算内调度。
+</details>
 
 <a id="full-text-benchmark-tables"></a>
 
-## 完整文本评测结果
+## 完整评测结果
 
 下表完整列出全部 29 项文本评测，**每张表均包含 EdgeRock-4B**。分数采用各评测的主要指标，统一为 0–100 标度。**粗体标出各对比列中的最高值，包含并列结果。** 有界状态模型与历史状态随序列增长的模型分别列出。
 
-### 有界状态模型对比：全部 29 项评测
+<details>
+<summary>有界状态模型对比：全部 29 项评测</summary>
 
 本组包含 EdgeRock-4B 和 16 个有界状态基线。Phi-3 Medium 使用配置为 2,047 token 的注意力窗口。
 
@@ -463,7 +509,10 @@ EdgeRock-4B 的注意力 KV 相对于序列长度保持 **O(1)**。每条序列�
 | AHN-GDN Qwen2.5 14B | 66.5 | 56.4 | **72.3** |
 | Phi-3 Medium 4K Instruct | 51.5 | 51.1 | 62.7 |
 
-### 与历史状态随序列增长的模型对比：全部 29 项评测
+</details>
+
+<details>
+<summary>与历史状态随序列增长的模型对比：全部 29 项评测</summary>
 
 EdgeRock-4B 的持久历史状态保持恒定；本组其余 11 个模型的历史状态随序列长度增长。
 
@@ -552,37 +601,51 @@ EdgeRock-4B 的持久历史状态保持恒定；本组其余 11 个模型的历�
 | Granite4.2-8B | 76.9 | 62.4 | 73.8 |
 | MiniCPM4.1-8B | 78.3 | 64.5 | 75.7 |
 
-### 能力评测设置
+</details>
+
+<details>
+<summary>能力评测设置</summary>
 
 大多数任务报告准确率，DROP 在 29 项均分中使用 F1。先按照各评测要求汇总学科或子任务，再对评测等权计算均分。AIME 在各年份内汇总回答结果，随后对三个年份等权平均。不同模型和评测的重复次数有所不同。
 
 EdgeRock 文本评测使用 temperature 0.6、top-p 0.95、top-k 20、presence penalty 0、seed 20260923，最大回答长度为 131,072 token。题目少于 100 道的评测，每题独立生成 64 条回答；100–10,000 道时生成 16 条；超过 10,000 道时生成 1 条。视觉与记忆评测使用参考计算路径。验证与判分细节见技术报告附录 A。
 
-<a id="frequently-asked-questions"></a>
+</details>
 
-## 常见问题
+<a id="documentation"></a>
 
-### 上下文增长时，哪些部分保持恒定？
-
-EdgeRock-4B 的**每条序列持久历史状态**保持恒定：循环状态、1,024 位置的局部窗口、每个 KV 组包含 1,024 条记录的锚点库，以及待提交候选，均具有固定容量。注意力 KV 每条序列占用 72 MiB；批量运行时含 FP16 循环矩阵与辅助状态的持久历史共占 97.76 MiB。模型权重和执行缓冲区在[显存构成](#constant-history-and-gpu-memory)中单独计入。
-
-### Rock Memory Anchors 如何保留远程信息？
-
-当源 token 离开局部注意力窗口后，Rock Memory Anchors 仍将选中的信息保留为可单独检索的键值记录。学习得到的写入器创建记录，准入机制为固定容量记忆库选择记录，后续查询再进行检索。读取使用已提交的记忆库，更新从下一个块生效。EdgeRock-4B 在[远程记忆评测](#distant-memory-that-reasoning-can-use)中的查询准确率达到 94.1%。
-
-### EdgeRock-4B 与其他推理模型相比表现如何？
-
-EdgeRock-4B 在 AIME 2024–2026 上的平均 pass@1 为 82.9%，参与评测的有界状态基线中最强结果为 18.8%。相对 Qwen3.5-4B 骨干，EdgeRock-4B 在将持久历史状态固定化的同时，保留了 96.3% 的 AIME 平均分。与 MiniCPM5-2B、LFM2.5-2.6B 及其他小型模型的对比覆盖数学、知识、代码和指令遵循能力。以上三类对比分别列于前文表格。
-
-## 仓库导航
+## 文档与资源
 
 - [USAGE.md](USAGE.md)：安装、生成、服务部署与评测命令。
 - [docs/runtime.md](docs/runtime.md)：计算精度、优化执行路径和复现条件。
 - [docs/results.md](docs/results.md)：有界状态模型、小型模型、源模型与视觉评测结果。
-- [英文技术报告](docs/report/EdgeRock_Technical_Report.pdf) · [中文技术报告](docs/report/EdgeRock_Technical_Report_zh-CN.pdf)。
+- [技术报告](docs/report/EdgeRock_Technical_Report_zh-CN.pdf)。
 - [docs/report/latex/main.tex](docs/report/latex/main.tex)：技术报告源码及原始图表。
 - `runtime/`：推理、模型实现、优化算子、评测与判分。
 - [llms.txt](llms.txt)：模型定义、结果与推理文档的简明导航。
+
+<a id="frequently-asked-questions"></a>
+
+<details>
+<summary>常见问题</summary>
+
+### EdgeRock-4B 是什么？
+
+EdgeRock-4B 是 ROCK MATRIX 首个开源的 4B 多模态推理模型，支持文本与图像推理，持久历史状态容量恒定。[模型权重](https://huggingface.co/rockmatrix-ai/EdgeRock)与[推理代码](USAGE.md)均已开放。
+
+### O(1) 内存中，哪些部分保持恒定？
+
+批量运行时，EdgeRock-4B 每条序列的持久历史状态为 **97.76 MiB**，包括注意力 KV 和循环状态，不随序列长度增长。GPU 总显存还包含模型权重与执行缓冲区，并随并发数变化。
+
+### RMA 为滑动窗口注意力补充了什么？
+
+滑动窗口注意力读取近期 token。RMA 将选中的远程信息保留为可单独检索的键值记录，使模型在固定容量记忆库内，仍能直接访问局部窗口之外的信息。
+
+### 运行需要量化或投机解码吗？
+
+报告中的推理采用**未量化的 BF16 权重与 KV**、FP32 GDN 更新和普通自回归解码。GDN 状态在 batch size 为 1 时以 FP32 存储，其余 batch 使用 FP16。固定容量的历史状态节省内存，CUDA Graphs 与算子融合加速执行。详见[运行配置](docs/runtime.md)。
+
+</details>
 
 <a id="citation"></a>
 
@@ -599,6 +662,8 @@ EdgeRock-4B 在 AIME 2024–2026 上的平均 pass@1 为 82.9%，参与评测的
   url = {https://arxiv.org/abs/2610.10118}
 }
 ```
+
+<a id="license"></a>
 
 ## 许可
 
