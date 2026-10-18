@@ -1,14 +1,14 @@
 # EdgeRock-4B inference runtime and results
 
-EdgeRock-4B sustains 233.7 decode tokens/s at batch size 1 with 128K input and 128K output, and reaches 12,124 end-to-end output tokens/s at batch size 512 with 32K input and 32K output. The [technical report](report/EdgeRock_Technical_Report.pdf) measures both on one Hopper 80GB GPU with tensor-parallel size one and ordinary autoregressive decoding.
+The [technical report](report/EdgeRock_Technical_Report.pdf) records historical measurements of 233.7 decode tokens/s at batch size 1 with 128K input and 128K output, and 12,124 end-to-end output tokens/s at batch size 512 with 32K input and 32K output, on one Hopper 80GB GPU. Those measurements predate the all-batch BF16-state and attention changes in this release. The current Runtime qualification is reported separately below.
 
-## Precision and history contract
+## Runtime precision and history contract
 
-| Component | Report profile |
+| Component | CUDA runtime |
 | --- | --- |
 | All model weights, including MLP and output head | BF16, unquantized |
 | Local and anchor KV | BF16 |
-| GDN recurrent-state storage | FP32 at batch size 1; FP16 for larger batches |
+| GDN recurrent-state storage | BF16 at every batch size |
 | GDN state updates | FP32 |
 | Local attention window | 1,024 positions |
 | Committed anchor capacity | 1,024 records per KV group |
@@ -18,15 +18,17 @@ EdgeRock-4B sustains 233.7 decode tokens/s at batch size 1 with 128K input and 1
 
 ## Constant-size persistent history
 
-EdgeRock-4B maintains 97.76 MiB of persistent history per sequence, in the batch runtime, including FP16 recurrent matrices and auxiliary tensors, independently of sequence length. The configuration-derived attention-KV capacity is 72 MiB. During decode, the local ring stores 1,023 preceding positions while the current token is supplied by the decoder, so the audited local-plus-anchor KV payload is 71.97 MiB. Full device allocation also includes weights, buffers, graphs, and workspace.
+EdgeRock-4B maintains 97.76 MiB of persistent history per sequence, including BF16 recurrent matrices and auxiliary tensors, independently of sequence length. The configuration-derived attention-KV capacity is 72 MiB. During decode, the local ring stores 1,023 preceding positions while the current token is supplied by the decoder, so the audited local-plus-anchor KV payload is 71.97 MiB. Full device allocation also includes weights, buffers, graphs, and workspace.
 
 ## Optimized execution
 
-The `fast` CUDA profile retains the report's arithmetic and cache capacities. Its selected implementation combines BF16 projection and normalization fusions, joint memory projection, cross-layer residual/RMSNorm fusion, local-attention Q/K preparation, and CUDA Graph replay. At batch size 512, original projection parameters share byte-identical storage with packed BF16 weights, removing 4.95 GiB of duplicate allocation.
+The `fast` CUDA profile uses BF16 recurrent-state storage and retains the report's FP32 state-update accumulation and cache capacities. Its selected implementation combines BF16 projection and normalization fusions, joint memory projection, cross-layer residual/RMSNorm fusion, local-attention Q/K preparation, and CUDA Graph replay. At batch size 512, original projection parameters share byte-identical storage with packed BF16 weights, removing 4.95 GiB of duplicate allocation.
 
-The fixed-length batch-size-1 benchmark additionally uses the validated output-head/sampling-state fusion. That path is restricted to its tested sampling contract: temperature 1.0, top-k 20, top-p 0.95, EOS disabled, no streaming or resumed prefill. General generation retains EOS, configurable sampling, and request-stream handling through the native generator. Both use BF16 weights/KV and FP32 GDN updates. The batch-size-1 path stores recurrent state in FP32; larger batches store it in FP16.
+Physical-ring decode attention uses PyTorch `EFFICIENT_ATTENTION` with grouped query heads and views of the existing KV storage within each request. Independent requests keep separate caches. This avoids the cuDNN SDPA forward nondeterminism observed in the validated environment, without duplicating persistent KV. The frozen report measurements below predate this attention change; new Runtime throughput must be measured separately.
 
-`reference` retains the reference local-attention execution path. It also uses unquantized weights and FP32 recurrence. It is a correctness-oriented execution profile, not the report's throughput configuration.
+The fixed-length batch-size-1 benchmark additionally uses the validated output-head/sampling-state fusion. That path is restricted to its tested sampling contract: temperature 1.0, top-k 20, top-p 0.95, EOS disabled, no streaming or resumed prefill. General generation retains EOS, configurable sampling, and request-stream handling through the native generator. Both use BF16 weights/KV and FP32 GDN updates. All batch sizes store recurrent state in BF16.
+
+`reference` retains the reference local-attention execution path. It also uses unquantized weights, BF16 recurrent-state storage and FP32 state-update accumulation. It is a correctness-oriented execution profile, not the report's throughput configuration.
 
 ## Throughput definitions
 
@@ -36,7 +38,20 @@ The fixed-length batch-size-1 benchmark additionally uses the validated output-h
 
 Loading, warmup, tokenization, and text decoding are excluded from both throughput measures. `1K = 1,024` tokens.
 
-## Workloads
+## Current Runtime qualification (2026-10-18)
+
+On one H800, with PyTorch 2.11.0+cu130 and cuDNN 91900, the released source passed two independent reference/release process pairs at both B1 and B512. Generated tokens matched across implementations and within each implementation's repeats. Actual BF16 prefill/decode storage, independent per-request prefill, cache bytes, and the original peak-memory tolerance also passed. The release ran without an SDPA wrapper; the frozen reference used an external correction to the same grouped efficient-attention backend. This establishes equivalence under that common backend, not bitwise equivalence to historical cuDNN outputs.
+
+The speed comparison below uses 4K input plus 2K output per request, BF16 weights/KV/recurrent storage, FP32 state updates, no quantization/speculation/offload, and no prefix caching or cross-request reuse. Each implementation completed one full-generation warmup followed by three timed generations. Output TPS includes independent prefill and excludes loading and warmup. The baseline is the original default frozen runtime; the release includes the attention correction.
+
+| Batch | Original default output TPS, three trials | Released output TPS, three trials | Original median | Released median | Change | Peak allocated GiB, both |
+| ---: | --- | --- | ---: | ---: | ---: | ---: |
+| 1 | 230.410 / 230.385 / 219.525 | 210.746 / 210.726 / 203.972 | 230.385 | 210.726 | −8.53% | 14.270 |
+| 512 | 8270.370 / 8272.755 / 8233.773 | 8218.094 / 8217.190 / 8168.149 | 8270.370 | 8217.190 | −0.64% | 63.548 |
+
+The released implementation produced identical token hashes in all three timed repetitions at each batch. Cache bytes and peak allocation did not increase. These measurements document the performance cost of the attention correction; they are Runtime qualification results and do not replace the frozen report tables or the separate BF16 paper rerun. They are output TPS, not decode-only rates. Acceptance run `edgerock-bf16-runtime-acceptance-20261018-v17`, artifact hashes, and exact measurements are recorded in [SOURCE.json](../runtime/optimizations/SOURCE.json).
+
+## Historical report workloads
 
 Single-request sustained decoding uses 128K input and 128K output. The native-context boundary check uses 254K input and 2K output; both total 262,144 tokens. The long-generation grid combines input and output lengths in {4K, 8K, 16K, 32K}, at batch sizes 32, 64, 128, 256, 320, 384, and 512. The short grid uses 4K input and 2K output at batch sizes 1, 2, 4, 8, 16, 32, 64, 128, 256, 320, 384, and 512.
 
@@ -44,7 +59,9 @@ Each EdgeRock configuration has three independent runs. Per-workload results use
 
 The benchmark uses synthetic tokens, a separate 256-token warmup, EOS disabled, temperature 1.0, top-k 20, top-p 0.95, and presence penalty 1.5. Eight continuations share each prompt in the batch grid and then retain independent histories. Batch size denotes submitted requests; EdgeRock maintains target concurrency, while vLLM schedules within its cache budget.
 
-## Measured results
+## Historical report measurements
+
+These are the published report measurements. The BF16-state rerun is in progress; these tables have not yet been replaced with its results.
 
 The following tables report fixed-length performance on one Hopper 80GB GPU with BF16 weights and KV, FP32 GDN updates, and tensor-parallel size one. Recurrent-state storage is FP32 at batch size 1 and FP16 for larger batches.
 

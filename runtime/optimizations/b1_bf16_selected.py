@@ -2,8 +2,8 @@ import torch
 
 
 def install(model):
-    """Install the selected BF16 fusion stack before prefill on a BF16/FP32 runtime."""
-    assert model.config.gdn_recurrent_state_storage == 'fp32'
+    """Install the selected BF16 fusion stack before prefill with BF16 weights, KV and recurrent storage."""
+    assert model.config.gdn_recurrent_state_storage == 'bf16_non_anchor'
     assert all(p.is_cuda and p.dtype == torch.bfloat16 for p in model.parameters())
     from . import b1_bf16_fusions
     b1_bf16_fusions.install(model)

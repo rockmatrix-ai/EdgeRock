@@ -3,7 +3,6 @@
 # Licensed under Apache-2.0: https://www.apache.org/licenses/LICENSE-2.0
 from __future__ import annotations
 from dataclasses import dataclass
-from contextlib import nullcontext
 import torch
 from torch import Tensor
 import importlib
@@ -985,7 +984,7 @@ def enable_bf16_b1_lm_head_inference(model: torch.nn.Module) -> int:
 
 def install_inference(model) -> dict[str, int | str | bool]:
     gdn_bv, gdn_warps = (128, 4)
-    recurrent_storage = 'fp32'
+    recurrent_storage = 'bf16_non_anchor'
     stack = {'fixed_memory_operator_profile': 'max_throughput', 'operator_revision': 'independent-gqa-grouped-fused-decode-v6', 'memory_backend': 'triton_direct_indexed_gqa', 'memory_decode_backend': 'triton_committed_gqa_masked_commit', 'memory_cache_dtype': 'bfloat16', 'packed_memory_layers': enable_independent_memory_packed_projections(model), 'packed_mlp_layers': enable_packed_mlp_inference(model), 'fused_mlp_activation_layers': enable_fused_mlp_activation_inference(model), 'packed_native_gdn_layers': enable_packed_all_native_gdn_inference(model), 'packed_all_native_gdn': True, 'graph_safe_conv_layers': enable_triton_graph_safe_conv_update(model), 'packed_swa_projection_layers': enable_packed_swa_projection_inference(model), 'native_rmsnorm_layers': enable_native_rmsnorm_inference(model, torch_tree=True), 'rmsnorm_reduction': 'torch_fp32_tree_fused', 'fused_residual_rmsnorm_layers': enable_fused_residual_rmsnorm_inference(model), 'fused_swa_output_gate_layers': enable_fused_swa_output_gate_inference(model), 'inplace_native_gdn_state': enable_inplace_native_gdn_state_inference(gdn_bv, gdn_warps, adaptive=True), 'gdn_block_value': gdn_bv, 'gdn_num_warps': gdn_warps, 'gdn_small_batch_block_value': 32, 'fused_gdn_gate_layers': enable_fused_gdn_gate_inference(model, grouped_query=True), 'gdn_grouped_query_decode': True, 'physical_ring_swa_layers': enable_physical_ring_fixed_memory_swa_update(model), 'swa_backend': 'physical', 'gdn_recurrent_state_storage': recurrent_storage, 'fused_decode_state': True, 'bf16_b1_lm_head': enable_bf16_b1_lm_head_inference(model)}
     model.config.fixed_memory_operator_profile = 'max_throughput'
     model.config.fixed_memory_operator_revision = stack['operator_revision']
@@ -1793,9 +1792,21 @@ def fixed_memory_physical_ring_decode_attention(query: torch.Tensor, ring_key: t
     if query_heads % key_heads:
         raise ValueError('query heads must be a multiple of physical-ring KV heads')
     from torch.nn.attention import SDPBackend, sdpa_kernel
-    with sdpa_kernel(SDPBackend.MATH) if reproducible else nullcontext():
-        output = F.scaled_dot_product_attention(query.transpose(1, 2), ring_key, ring_value, attn_mask=valid[:, None, None, :], dropout_p=0.0, is_causal=False, enable_gqa=query_heads != key_heads)
-    return output.transpose(1, 2)
+    if reproducible:
+        with sdpa_kernel(SDPBackend.MATH):
+            output = F.scaled_dot_product_attention(query.transpose(1, 2), ring_key, ring_value, attn_mask=valid[:, None, None, :], dropout_p=0.0, is_causal=False, enable_gqa=query_heads != key_heads)
+        return output.transpose(1, 2)
+    batch = int(query.shape[0])
+    groups = query_heads // key_heads
+    window = int(ring_key.shape[2])
+    # Zero-stride head views preserve GQA without copying KV or selecting cuDNN.
+    q = query.transpose(1, 2).reshape(batch * key_heads, groups, 1, query.shape[-1])
+    k = ring_key.reshape(batch * key_heads, 1, window, ring_key.shape[-1]).expand(-1, groups, -1, -1)
+    v = ring_value.reshape(batch * key_heads, 1, window, ring_value.shape[-1]).expand(-1, groups, -1, -1)
+    mask = valid[:, None, :].expand(-1, key_heads, -1).reshape(batch * key_heads, 1, 1, window)
+    with sdpa_kernel(SDPBackend.EFFICIENT_ATTENTION):
+        output = F.scaled_dot_product_attention(q, k, v, attn_mask=mask, dropout_p=0.0, is_causal=False)
+    return output.reshape(batch, query_heads, 1, ring_value.shape[-1]).transpose(1, 2)
 
 @triton.jit
 def _qwen35_sigmoid_mul_kernel(values_ptr, gate_ptr, output_ptr, total_elements: tl.constexpr, block_size: tl.constexpr):

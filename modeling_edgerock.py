@@ -706,7 +706,7 @@ class FixedMemoryHybridDynamicCache(Cache):
             if index in swa_layers:
                 layers.append(FixedMemorySlidingWindowLayer(window))
             elif layer_type == 'linear_attention':
-                prefill_dtype = torch.bfloat16 if getattr(text_config, 'gdn_recurrent_state_storage', 'fp32') == 'fp16_non_anchor' else None
+                prefill_dtype = torch.bfloat16 if getattr(text_config, 'gdn_recurrent_state_storage', 'fp32') in {'bf16_non_anchor', 'fp16_non_anchor'} else None
                 layers.append(FixedMemoryLinearAttentionLayer(recurrent_prefill_dtype=prefill_dtype))
             else:
                 raise ValueError(f'unsupported fixed-memory cache layer {index}: {layer_type}')

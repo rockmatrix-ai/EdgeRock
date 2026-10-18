@@ -4,12 +4,14 @@
   "source": "Frozen implementation used for the October 2026 technical report",
   "packaging_changes": [
     "Package-relative imports.",
-    "Cache initialization follows the selected recurrent-state precision profile."
+    "Convolution and recurrence retain independent cache dtypes.",
+    "CUDA runtime defaults to BF16 recurrent storage at every batch size; FP32 update accumulation is unchanged.",
+    "Physical-ring decode attention uses grouped zero-stride KV views with PyTorch EFFICIENT_ATTENTION to avoid observed cuDNN forward nondeterminism without duplicating persistent KV."
   ],
   "components": {
     "b1_bf16_selected.py": {
       "report_source_sha256": "82d7484627684ed3c2375a8d0339497399e67cf24ae705cddb45215cfe75f57d",
-      "release_sha256": "392d4980127b595059d6840f3aa802840f757ac7eb026fe01ad89be90ee6c367"
+      "release_sha256": "7c96b9fa282c87f094b0dfe174d6618a25d9df2c71bcae38812e4d36c711becd"
     },
     "b1_bf16_fusions.py": {
       "report_source_sha256": "9cd816ae32ee03e312445291dd859ff41b43acee94ee916de1e213db98d11a9b",
@@ -38,6 +40,84 @@
     "b512_share_bf16_weights.py": {
       "report_source_sha256": "02677ef9d025423264c6b4a9bfaf85c82d5675aa74bf07de51d787f0699d9345",
       "release_sha256": "02677ef9d025423264c6b4a9bfaf85c82d5675aa74bf07de51d787f0699d9345"
+    }
+  },
+  "bf16_state_reference_run": "edgerock-128k-bestbatch-20261018-edge-bf16state-v3",
+  "physical_ring_attention_change": {
+    "source_diagnostic_run": "edgerock-bf16-runtime-grouped-sdpa-repeat-20261018-v16",
+    "release_inference_kernels_sha256": "564820a8692d5e9526040463b746e3cbc8b709c41b2e84f7188cdae60b067292",
+    "formal_acceptance": {
+      "status": "passed",
+      "date": "2026-10-18",
+      "run_id": "edgerock-bf16-runtime-acceptance-20261018-v17",
+      "slurm_job_id": 422927,
+      "environment": "H800; PyTorch 2.11.0+cu130; cuDNN 91900",
+      "reference": "Frozen source with external grouped EFFICIENT_ATTENTION correction; released candidate ran unwrapped. Equivalence is under this common corrected backend, not against historical nondeterministic cuDNN outputs.",
+      "checks": [
+        "two independent reference/release process pairs per batch",
+        "token equality across implementations and within repeats",
+        "BF16 prefill and decode recurrent storage",
+        "independent per-request prefill",
+        "cache byte equality",
+        "original peak-memory tolerance",
+        "unwrapped release source"
+      ],
+      "speed_protocol": {
+        "input_tokens": 4096,
+        "output_tokens": 2048,
+        "full_generation_warmup_calls": 1,
+        "timed_calls": 3,
+        "metric": "output tokens / generation wall time including prefill",
+        "baseline": "original frozen default cuDNN path",
+        "release": "in-source grouped EFFICIENT_ATTENTION",
+        "paper_result": false
+      },
+      "batches": {
+        "1": {
+          "manifest_sha256": "79b7a52fec334a62854e0ce6ccd4f9d623042736087be49e8fa2c742c4fb24c5",
+          "validation_passed": true,
+          "output_token_sha256": "851192f484b0dc2ba83232a381055637958c3fa4b69377320cc162b951321935",
+          "baseline_trials_output_tps": [
+            230.4101261568867,
+            230.38532371553555,
+            219.52501767745193
+          ],
+          "release_trials_output_tps": [
+            210.74617372026032,
+            210.7263298727412,
+            203.97152321588845
+          ],
+          "baseline_median_output_tps": 230.38532371553555,
+          "release_median_output_tps": 210.7263298727412,
+          "release_over_baseline": 0.9146690703828514,
+          "baseline_peak_allocated_gib": 14.269504070281982,
+          "release_peak_allocated_gib": 14.269504070281982,
+          "release_timed_tokens_repeatable": true,
+          "cache_bytes_equal": true
+        },
+        "512": {
+          "manifest_sha256": "920d43855924e25521d1259908637528511e5a974bcd3382a777894f4d12e938",
+          "validation_passed": true,
+          "output_token_sha256": "ad1dd751ef4b468ea0f1183b2228655f173ca91fedcf45c6457305f597d71454",
+          "baseline_trials_output_tps": [
+            8270.370076665207,
+            8272.754923447415,
+            8233.773287549524
+          ],
+          "release_trials_output_tps": [
+            8218.093798671816,
+            8217.189832268046,
+            8168.14852213838
+          ],
+          "baseline_median_output_tps": 8270.370076665207,
+          "release_median_output_tps": 8217.189832268046,
+          "release_over_baseline": 0.9935697866112172,
+          "baseline_peak_allocated_gib": 63.54788160324097,
+          "release_peak_allocated_gib": 63.54788160324097,
+          "release_timed_tokens_repeatable": true,
+          "cache_bytes_equal": true
+        }
+      }
     }
   }
 }

@@ -70,9 +70,6 @@ class Engine:
                     self.operators['shared_bf16_weight_bytes'] = sharing['saved_bytes']
                     self.operators['bitwise_weight_checks'] = sharing['bitwise_weight_checks']
                 self.operators['selected_bf16_fusions'] = True
-                if batch > 1:
-                    self.model.config.gdn_recurrent_state_storage = 'fp16_non_anchor'
-                    self.operators['gdn_recurrent_state_storage'] = 'fp16_non_anchor'
         else:
             from model.fixed_memory import load_model
             self.model = load_model(model, backend='torch', torch_dtype=dtype,
