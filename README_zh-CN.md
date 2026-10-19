@@ -1,6 +1,6 @@
 <div align="center">
   <h1><img src="assets/rockmatrix-transparent.png" alt="" width="44" height="44" align="absmiddle" /> EdgeRock</h1>
-  <p><strong>恒定显存下的强大推理能力</strong><br /><sub>ROCK MATRIX</sub></p>
+  <p><strong>恒定显存下的强大推理能力</strong><br /><sub><a href="https://rockmatrix.ai">ROCK MATRIX · rockmatrix.ai</a></sub></p>
   <p><a href="README.md">English</a> · <b>简体中文</b></p>
   <p>
     <a href="docs/report/EdgeRock_Technical_Report_zh-CN.pdf"><img src="assets/readme-report-zh.svg" alt="技术报告" height="30" /></a>
@@ -15,7 +15,7 @@
 - **O(1) 历史内存：** 每条序列的注意力 KV 固定为 **72 MiB**，比 Qwen3.5-4B 减少 **99.1%**。
 - **更高服务吞吐：** 最佳实测 batch 下，输出吞吐达到 Qwen3.5-4B 的 **6.42 倍**。
 
-[快速开始](#quick-start) · [核心结果](#capability) · [RMA 原理](#how-rock-memory-anchors-work) · [文档与引用](#documentation)
+[快速开始](#quick-start) · [核心结果](#capability) · [模型目录](#model-directory) · [文档与引用](#documentation)
 
 ![EdgeRock-4B：推理能力、恒定 KV 内存与推理效率](assets/hero_capability.png)
 
@@ -44,6 +44,54 @@ python run.py demo --model checkpoints/EdgeRock-4B \
 ```
 
 优化推理与服务部署见[推理指南](USAGE.md)。
+
+<a id="model-directory"></a>
+
+## 模型目录
+
+按运行时选择版本；下列链接均指向现有模型仓库。各包的安装方法、许可和验证范围以对应模型卡为准。
+
+### 原版模型与紧凑 PyTorch
+
+| 模型仓库 | 格式 / 运行时 |
+| --- | --- |
+| [EdgeRock-4B（原版）](https://huggingface.co/rockmatrix-ai/EdgeRock) | BF16 · 文本与图像 |
+| [EdgeRock-4B-NF4](https://huggingface.co/rockmatrix-ai/EdgeRock-4B-NF4) | NF4 · 仓库专用加载器 |
+| [EdgeRock-4B-INT8](https://huggingface.co/rockmatrix-ai/EdgeRock-4B-INT8) | INT8 · 仓库专用加载器 |
+| [EdgeRock-4B-FP8](https://huggingface.co/rockmatrix-ai/EdgeRock-4B-FP8) | FP8 · 仓库专用加载器 |
+
+紧凑 PyTorch 包已在 Hopper 上验证文本推理；转换检查详见各模型卡。原版模型的评测分数不代表量化包的完整能力或吞吐。
+
+### MLX
+
+| 模型仓库 | 格式 / 运行时 |
+| --- | --- |
+| [EdgeRock-4B-MLX-8bit](https://huggingface.co/hkust-aaron/EdgeRock-4B-MLX-8bit) | 8-bit · 分组 64 |
+| [EdgeRock-4B-MLX-6bit-g64](https://huggingface.co/hkust-aaron/EdgeRock-4B-MLX-6bit-g64) | 6-bit · 分组 64 |
+| [EdgeRock-4B-MLX-4bit-g32](https://huggingface.co/hkust-aaron/EdgeRock-4B-MLX-4bit-g32) | 4-bit · 分组 32 |
+| [EdgeRock-4B-MLX-4bit-mixed](https://huggingface.co/hkust-aaron/EdgeRock-4B-MLX-4bit-mixed) | 混合 4-bit |
+
+这些包使用仓库内的 EdgeRock MLX 运行时。功能检查在 Linux CUDA 上完成；尚未验证 Apple Metal。
+
+### GGUF 与 ONNX
+
+| 模型仓库 | 格式 / 运行时 |
+| --- | --- |
+| [EdgeRock-4B-GGUF](https://huggingface.co/hkust-aaron/EdgeRock-4B-GGUF) | 7 种配置 · 专用 EdgeRock 后端 |
+| [EdgeRock-4B-ONNX-Q4-g32](https://huggingface.co/hkust-aaron/EdgeRock-4B-ONNX-Q4-g32) | 4-bit · ONNX Runtime CUDA |
+| [EdgeRock-4B-ONNX-Q4-CPU-g32](https://huggingface.co/hkust-aaron/EdgeRock-4B-ONNX-Q4-CPU-g32) | 4-bit · ONNX Runtime CPU |
+| [EdgeRock-4B-ONNX-Q8](https://huggingface.co/hkust-aaron/EdgeRock-4B-ONNX-Q8) | 8-bit · ONNX Runtime CUDA |
+
+GGUF 需要专用 EdgeRock RMA 后端，不支持直接使用原版 llama.cpp/Ollama；所附原生程序面向 Linux x86-64 Hopper。ONNX 包需使用仓库内管理状态的运行器；尚未验证移动端 ONNX Runtime。
+
+### 移动端开发预览
+
+| 模型仓库 | 格式 / 运行时 |
+| --- | --- |
+| [EdgeRock-4B-LiteRT-LM-INT8](https://huggingface.co/hkust-aaron/EdgeRock-4B-LiteRT-LM-INT8) | INT8 · LiteRT-LM CPU 预览 |
+| [EdgeRock-4B-LiteRT-LM-INT4](https://huggingface.co/hkust-aaron/EdgeRock-4B-LiteRT-LM-INT4) | INT4 · LiteRT-LM CPU 预览 |
+
+面向 Google AI Edge Gallery 的开发预览。完整模型长记忆检查和 Android 真机验证仍在进行中；不包含图像与音频输入。
 
 <a id="capability"></a>
 

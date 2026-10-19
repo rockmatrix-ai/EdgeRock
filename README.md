@@ -1,6 +1,6 @@
 <div align="center">
   <h1><img src="assets/rockmatrix-transparent.png" alt="" width="44" height="44" align="absmiddle" /> EdgeRock</h1>
-  <p><strong>Strong Reasoning at Constant Memory</strong><br /><sub>ROCK MATRIX</sub></p>
+  <p><strong>Strong Reasoning at Constant Memory</strong><br /><sub><a href="https://rockmatrix.ai">ROCK MATRIX · rockmatrix.ai</a></sub></p>
   <p><b>English</b> · <a href="README_zh-CN.md">简体中文</a></p>
   <p>
     <a href="docs/report/EdgeRock_Technical_Report.pdf"><img src="assets/readme-report-en.svg" alt="Technical Report" height="30" /></a>
@@ -15,7 +15,7 @@
 - **O(1) history memory:** fixed **72 MiB** attention KV per sequence—**99.1% less** than Qwen3.5-4B.
 - **Higher serving throughput:** **6.42×** Qwen3.5-4B's output throughput at each model's best measured batch.
 
-[Quick start](#quick-start) · [Key results](#capability) · [How RMA works](#how-rock-memory-anchors-work) · [Documentation](#documentation)
+[Quick start](#quick-start) · [Key results](#capability) · [Models](#model-directory) · [Documentation](#documentation)
 
 ![EdgeRock-4B: reasoning capability, constant KV memory, and inference efficiency](assets/hero_capability.png)
 
@@ -44,6 +44,54 @@ python run.py demo --model checkpoints/EdgeRock-4B \
 ```
 
 For optimized inference and serving, see the [inference guide](USAGE.md).
+
+<a id="model-directory"></a>
+
+## Model directory
+
+Choose a package by runtime. These links point to the existing model repositories; each card contains its installation instructions, license, and validation scope.
+
+### Original model and compact PyTorch
+
+| Model repository | Format / runtime |
+| --- | --- |
+| [EdgeRock-4B (original)](https://huggingface.co/rockmatrix-ai/EdgeRock) | BF16 · text and images |
+| [EdgeRock-4B-NF4](https://huggingface.co/rockmatrix-ai/EdgeRock-4B-NF4) | NF4 · included compact loader |
+| [EdgeRock-4B-INT8](https://huggingface.co/rockmatrix-ai/EdgeRock-4B-INT8) | INT8 · included compact loader |
+| [EdgeRock-4B-FP8](https://huggingface.co/rockmatrix-ai/EdgeRock-4B-FP8) | FP8 · included compact loader |
+
+The compact packages validate text inference on Hopper; see each card for its conversion checks. Original-model benchmark scores do not establish quantized-package accuracy or throughput.
+
+### MLX
+
+| Model repository | Format / runtime |
+| --- | --- |
+| [EdgeRock-4B-MLX-8bit](https://huggingface.co/hkust-aaron/EdgeRock-4B-MLX-8bit) | 8-bit · group 64 |
+| [EdgeRock-4B-MLX-6bit-g64](https://huggingface.co/hkust-aaron/EdgeRock-4B-MLX-6bit-g64) | 6-bit · group 64 |
+| [EdgeRock-4B-MLX-4bit-g32](https://huggingface.co/hkust-aaron/EdgeRock-4B-MLX-4bit-g32) | 4-bit · group 32 |
+| [EdgeRock-4B-MLX-4bit-mixed](https://huggingface.co/hkust-aaron/EdgeRock-4B-MLX-4bit-mixed) | Mixed 4-bit |
+
+These packages use the included EdgeRock MLX runtime. Functional checks were run on Linux CUDA; Apple Metal has not been tested.
+
+### GGUF and ONNX
+
+| Model repository | Format / runtime |
+| --- | --- |
+| [EdgeRock-4B-GGUF](https://huggingface.co/hkust-aaron/EdgeRock-4B-GGUF) | 7 profiles · custom EdgeRock backend |
+| [EdgeRock-4B-ONNX-Q4-g32](https://huggingface.co/hkust-aaron/EdgeRock-4B-ONNX-Q4-g32) | 4-bit · ONNX Runtime CUDA |
+| [EdgeRock-4B-ONNX-Q4-CPU-g32](https://huggingface.co/hkust-aaron/EdgeRock-4B-ONNX-Q4-CPU-g32) | 4-bit · ONNX Runtime CPU |
+| [EdgeRock-4B-ONNX-Q8](https://huggingface.co/hkust-aaron/EdgeRock-4B-ONNX-Q8) | 8-bit · ONNX Runtime CUDA |
+
+GGUF requires the custom EdgeRock RMA backend; stock llama.cpp/Ollama is not supported. Bundled native binaries target Linux x86-64 Hopper. ONNX packages require their supplied stateful runner; mobile ONNX Runtime has not been tested.
+
+### Mobile development previews
+
+| Model repository | Format / runtime |
+| --- | --- |
+| [EdgeRock-4B-LiteRT-LM-INT8](https://huggingface.co/hkust-aaron/EdgeRock-4B-LiteRT-LM-INT8) | INT8 · LiteRT-LM CPU preview |
+| [EdgeRock-4B-LiteRT-LM-INT4](https://huggingface.co/hkust-aaron/EdgeRock-4B-LiteRT-LM-INT4) | INT4 · LiteRT-LM CPU preview |
+
+Development previews for Google AI Edge Gallery. Full-model long-memory checks and Android device validation are in progress; image and audio inputs are not included.
 
 <a id="capability"></a>
 
