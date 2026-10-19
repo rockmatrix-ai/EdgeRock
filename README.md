@@ -49,7 +49,7 @@ For optimized inference and serving, see the [inference guide](USAGE.md).
 
 ## Model directory
 
-Choose a package by runtime. These links point to the existing model repositories; each card contains its installation instructions, license, and validation scope.
+Choose a package by runtime, or browse the [public EdgeRock model collection](https://huggingface.co/collections/hkust-aaron/edgerock-models-and-quantized-releases-6ad672506320a5546779b18c). Each model card contains its installation instructions, license, and validation scope.
 
 ### Original model and compact PyTorch
 
@@ -59,6 +59,9 @@ Choose a package by runtime. These links point to the existing model repositorie
 | [EdgeRock-4B-NF4](https://huggingface.co/rockmatrix-ai/EdgeRock-4B-NF4) | NF4 · included compact loader |
 | [EdgeRock-4B-INT8](https://huggingface.co/rockmatrix-ai/EdgeRock-4B-INT8) | INT8 · included compact loader |
 | [EdgeRock-4B-FP8](https://huggingface.co/rockmatrix-ai/EdgeRock-4B-FP8) | FP8 · included compact loader |
+| [EdgeRock-4B-AWQ](https://huggingface.co/hkust-aaron/EdgeRock-4B-AWQ) | AWQ 4-bit · included packed INT4 GPU runtime |
+| [EdgeRock-4B-GPTQ](https://huggingface.co/hkust-aaron/EdgeRock-4B-GPTQ) | GPTQ 4-bit · included packed INT4 GPU runtime |
+| [EdgeRock-4B-NVFP4](https://huggingface.co/hkust-aaron/EdgeRock-4B-NVFP4) | NVFP4 W4A16 · BF16 reference loading |
 
 The compact packages validate text inference on Hopper; see each card for its conversion checks. Original-model benchmark scores do not establish quantized-package accuracy or throughput.
 
