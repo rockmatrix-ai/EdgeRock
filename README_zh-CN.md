@@ -49,7 +49,7 @@ python run.py demo --model checkpoints/EdgeRock-4B \
 
 ## 模型目录
 
-按运行时选择版本；下列链接均指向现有模型仓库。各包的安装方法、许可和验证范围以对应模型卡为准。
+按运行时选择版本，或浏览 [EdgeRock 公开模型合集](https://huggingface.co/collections/hkust-aaron/edgerock-models-and-quantized-releases-6ad672506320a5546779b18c)。各包的安装方法、许可和验证范围见对应模型卡。
 
 ### 原版模型与紧凑 PyTorch
 
@@ -59,6 +59,9 @@ python run.py demo --model checkpoints/EdgeRock-4B \
 | [EdgeRock-4B-NF4](https://huggingface.co/rockmatrix-ai/EdgeRock-4B-NF4) | NF4 · 仓库专用加载器 |
 | [EdgeRock-4B-INT8](https://huggingface.co/rockmatrix-ai/EdgeRock-4B-INT8) | INT8 · 仓库专用加载器 |
 | [EdgeRock-4B-FP8](https://huggingface.co/rockmatrix-ai/EdgeRock-4B-FP8) | FP8 · 仓库专用加载器 |
+| [EdgeRock-4B-AWQ](https://huggingface.co/hkust-aaron/EdgeRock-4B-AWQ) | AWQ 4-bit · 仓库内 INT4 GPU 运行时 |
+| [EdgeRock-4B-GPTQ](https://huggingface.co/hkust-aaron/EdgeRock-4B-GPTQ) | GPTQ 4-bit · 仓库内 INT4 GPU 运行时 |
+| [EdgeRock-4B-NVFP4](https://huggingface.co/hkust-aaron/EdgeRock-4B-NVFP4) | NVFP4 W4A16 · BF16 参考加载 |
 
 紧凑 PyTorch 包已在 Hopper 上验证文本推理；转换检查详见各模型卡。原版模型的评测分数不代表量化包的完整能力或吞吐。
 
