@@ -7,19 +7,36 @@
     <a href="https://huggingface.co/rockmatrix-ai/EdgeRock"><img src="assets/readme-huggingface.svg" alt="Hugging Face" height="30" /></a>
     <a href="https://modelscope.cn/models/rockmatrix/EdgeRock"><img src="assets/readme-modelscope.svg" alt="ModelScope" height="30" /></a>
   </p>
+  <p><strong>Rock Matrix Whitepaper:</strong> <a href="docs/whitepaper/rock-matrix-whitepaper-en.pdf">English PDF</a> · <a href="docs/whitepaper/rock-matrix-whitepaper-zh.pdf">中文 PDF</a></p>
 </div>
 
-**EdgeRock brings strong reasoning to a fixed history budget.** EdgeRock-4B, our first open-source release, supports text and image reasoning. Its constant-size history leaves more GPU memory available for sustained reasoning and concurrent serving. More model sizes are in preparation.
+**Strong reasoning without a growing KV cache.** EdgeRock is Rock Matrix's fixed-memory model family. EdgeRock-4B, the first open-source release, understands text and images and generates text for reasoning, coding, and agent workflows.
+
+Recurrent state summarizes the context, local attention handles recent information, and **Rock Memory Anchors (RMA)** preserve selected distant details. These three parts keep persistent history at a fixed capacity as a request grows, leaving more GPU memory for concurrent requests and making long-running generation more economical.
 
 - **Strong mathematical reasoning:** **82.9%** mean AIME pass@1, versus 18.8% for the strongest evaluated bounded-state baseline.
 - **O(1) history memory:** fixed **72 MiB** attention KV per sequence—**99.1% less** than Qwen3.5-4B.
 - **Higher serving throughput:** **6.42×** Qwen3.5-4B's output throughput at each model's best measured batch.
 
-[Quick start](#quick-start) · [Key results](#capability) · [Models](#model-directory) · [Documentation](#documentation)
+[Quick start](#quick-start) · [Key results](#capability) · [Models](#model-directory) · [Whitepaper](#rock-matrix-whitepaper) · [Documentation](#documentation)
 
 ![EdgeRock-4B: reasoning capability, constant KV memory, and inference efficiency](assets/hero_capability.png)
 
 *AIME is mean pass@1 across 2024–2026; KV is compared at 256K context. Serving throughput uses 32K input and 32K output on one Hopper 80GB GPU at each model's best measured batch. It counts output tokens only, with elapsed time including prefill.*
+
+<a id="rock-matrix-whitepaper"></a>
+
+## Rock Matrix: toward Ultra-Fast Token
+
+On-demand agents and software need fast generation, not just fast prompt processing. Our whitepaper connects three complementary directions:
+
+- **EdgeRock: fixed memory.** Strong text and image reasoning with a KV cache that stays constant as context grows.
+- **DiffusionRock: parallel generation.** Generate a block together, then refine it over several rounds. The route starts with fast text generation and extends to any-to-any multimodal generation.
+- **SiliconRock: models in silicon.** Build main weights into circuits and keep fixed-capacity state in on-chip SRAM, targeting **one million tokens/s for a single user**.
+
+EdgeRock and DiffusionRock can run independently or work together. The whitepaper sets out the broader model-and-hardware roadmap; this repository provides EdgeRock's inference and evaluation code.
+
+**Read the whitepaper:** [English PDF](docs/whitepaper/rock-matrix-whitepaper-en.pdf) · [中文 PDF](docs/whitepaper/rock-matrix-whitepaper-zh.pdf) · [Website](https://rockmatrix.ai/research/#whitepaper)
 
 <a id="quick-start"></a>
 

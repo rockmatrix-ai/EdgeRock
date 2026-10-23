@@ -7,19 +7,36 @@
     <a href="https://huggingface.co/rockmatrix-ai/EdgeRock"><img src="assets/readme-huggingface.svg" alt="Hugging Face" height="30" /></a>
     <a href="https://modelscope.cn/models/rockmatrix/EdgeRock"><img src="assets/readme-modelscope.svg" alt="ModelScope" height="30" /></a>
   </p>
+  <p><strong>岩芯矩阵技术白皮书：</strong><a href="docs/whitepaper/rock-matrix-whitepaper-zh.pdf">中文 PDF</a> · <a href="docs/whitepaper/rock-matrix-whitepaper-en.pdf">English PDF</a></p>
 </div>
 
-**EdgeRock 让强大推理能力与恒定历史内存兼得。** 首个开源模型 EdgeRock-4B 支持文本与图像推理，将长程推理的历史状态控制在固定容量内，为持续推理和高并发服务留出更多显存。更多模型尺寸正在准备中。
+**强推理，KV 缓存不增长。** EdgeRock 是岩芯矩阵的固定记忆模型系列。首个开源版本 EdgeRock-4B 理解文本和图像，生成文本，用于推理、编程和 Agent 工作流。
+
+递推状态概括上下文，局部注意力处理眼前信息，**记忆岩锚（Rock Memory Anchors，RMA）**保留远处的关键细节。三者共同把历史状态控制在固定容量内，推理越长，历史内存也不增长。同一张 GPU 因而能服务更多请求，让长程生成更省显存、更经济。
 
 - **强数学推理：** AIME 平均 pass@1 达到 **82.9%**，参与评测的有界状态基线中最高为 18.8%。
 - **O(1) 历史内存：** 每条序列的注意力 KV 固定为 **72 MiB**，比 Qwen3.5-4B 减少 **99.1%**。
 - **更高服务吞吐：** 最佳实测 batch 下，输出吞吐达到 Qwen3.5-4B 的 **6.42 倍**。
 
-[快速开始](#quick-start) · [核心结果](#capability) · [模型目录](#model-directory) · [文档与引用](#documentation)
+[快速开始](#quick-start) · [核心结果](#capability) · [模型目录](#model-directory) · [白皮书](#rock-matrix-whitepaper) · [文档与引用](#documentation)
 
 ![EdgeRock-4B：推理能力、恒定 KV 内存与推理效率](assets/hero_capability.png)
 
 *AIME 为 2024–2026 三年平均 pass@1；KV 对比采用 256K 上下文。服务吞吐在单张 Hopper 80GB 上以 32K 输入、32K 输出测得，各模型采用最佳实测 batch；仅统计输出 token，耗时包含预填充。*
+
+<a id="rock-matrix-whitepaper"></a>
+
+## 岩芯矩阵：走向 Ultra-Fast Token
+
+Agent 和软件要随用随生，关键是生成快，而不只是读入需求快。白皮书将三条互相配合的技术路线连在一起：
+
+- **EdgeRock：固定记忆。** 保留文本与图像推理能力，让 KV 缓存不再随上下文增长。
+- **DiffusionRock：并行生成。** 一次生成一整块，再用几轮集中修改；从高速文本生成，走向 any-to-any 多模态生成。
+- **SiliconRock：模型固化。** 主权重做成电路，固定容量的状态放进片上 SRAM，目标是**单用户每秒百万 token**。
+
+EdgeRock 和 DiffusionRock 可以独立使用，也可以组合。白皮书介绍完整的模型与芯片路线，本仓库提供 EdgeRock 的推理和评测代码。
+
+**阅读白皮书：**[中文 PDF](docs/whitepaper/rock-matrix-whitepaper-zh.pdf) · [English PDF](docs/whitepaper/rock-matrix-whitepaper-en.pdf) · [官网下载页](https://rockmatrix.ai/research/#whitepaper)
 
 <a id="quick-start"></a>
 
