@@ -667,6 +667,7 @@ The 29-benchmark mean weights tasks equally after their subject/subtask aggregat
 
 - [Inference guide](USAGE.md) · [Runtime and reproduction](docs/runtime.md) · [Evaluation details](docs/results.md)
 - [Technical report](docs/report/EdgeRock_Technical_Report.pdf) · [LaTeX source](docs/report/latex/main.tex) · [Citation metadata](CITATION.cff)
+- Rock Matrix whitepaper (October 2026): [English](docs/whitepaper/rock-matrix-whitepaper-en.pdf) · [简体中文](docs/whitepaper/rock-matrix-whitepaper-zh.pdf)
 - [Runtime source](runtime/) · [Documentation index for AI readers](llms.txt)
 
 <a id="frequently-asked-questions"></a>

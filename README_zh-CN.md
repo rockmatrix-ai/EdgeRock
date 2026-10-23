@@ -671,6 +671,7 @@ EdgeRock 文本评测使用 temperature 0.6、top-p 0.95、top-k 20、presence p
 - [docs/runtime.md](docs/runtime.md)：计算精度、优化执行路径和复现条件。
 - [docs/results.md](docs/results.md)：有界状态模型、小型模型、源模型与视觉评测结果。
 - [技术报告](docs/report/EdgeRock_Technical_Report_zh-CN.pdf)。
+- 岩芯矩阵技术白皮书（2026 年 10 月）：[简体中文](docs/whitepaper/rock-matrix-whitepaper-zh.pdf) · [English](docs/whitepaper/rock-matrix-whitepaper-en.pdf)。
 - [docs/report/latex/main.tex](docs/report/latex/main.tex)：技术报告源码及原始图表。
 - `runtime/`：推理、模型实现、优化算子、评测与判分。
 - [llms.txt](llms.txt)：模型定义、结果与推理文档的简明导航。
