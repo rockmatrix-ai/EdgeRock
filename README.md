@@ -3,9 +3,8 @@
   <p><strong>Strong Reasoning at Constant Memory</strong></p>
   <p><a href="https://rockmatrix.ai">rockmatrix.ai</a> &nbsp;·&nbsp; <b>English</b> · <a href="README_zh-CN.md">简体中文</a></p>
   <p>
-    <a href="docs/report/EdgeRock_Technical_Report.pdf"><img src="assets/readme-report-en.svg" alt="Technical Report" height="30" /></a>&nbsp;
-    <a href="docs/whitepaper/rock-matrix-whitepaper-en.pdf"><img src="assets/readme-whitepaper-en.svg" alt="Whitepaper" height="30" /></a>&nbsp;
-    <a href="https://arxiv.org/abs/2610.10118"><img src="assets/readme-arxiv.svg" alt="arXiv" height="30" /></a>
+    <a href="https://arxiv.org/abs/2610.10118"><img src="assets/readme-arxiv.svg" alt="arXiv" height="30" /></a>&nbsp;
+    <a href="docs/whitepaper/rock-matrix-whitepaper-en.pdf"><img src="assets/readme-whitepaper-en.svg" alt="Whitepaper" height="30" /></a>
   </p>
   <p>
     <a href="https://huggingface.co/rockmatrix-ai/EdgeRock"><img src="assets/readme-huggingface.svg" alt="Hugging Face" height="30" /></a>&nbsp;
