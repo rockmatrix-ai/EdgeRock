@@ -1,13 +1,16 @@
 <div align="center">
   <h1><img src="assets/rockmatrix-transparent.png" alt="" width="44" height="44" align="absmiddle" /> EdgeRock</h1>
-  <p><strong>恒定显存下的强大推理能力</strong><br /><sub><a href="https://rockmatrix.ai">ROCK MATRIX · rockmatrix.ai</a></sub></p>
-  <p><a href="README.md">English</a> · <b>简体中文</b></p>
+  <p><strong>恒定显存下的强大推理能力</strong></p>
+  <p><a href="https://rockmatrix.ai">rockmatrix.ai</a> &nbsp;·&nbsp; <a href="README.md">English</a> · <b>简体中文</b></p>
   <p>
-    <a href="docs/report/EdgeRock_Technical_Report_zh-CN.pdf"><img src="assets/readme-report-zh.svg" alt="技术报告" height="30" /></a>
-    <a href="https://huggingface.co/rockmatrix-ai/EdgeRock"><img src="assets/readme-huggingface.svg" alt="Hugging Face" height="30" /></a>
+    <a href="docs/report/EdgeRock_Technical_Report_zh-CN.pdf"><img src="assets/readme-report-zh.svg" alt="技术报告" height="30" /></a>&nbsp;
+    <a href="docs/whitepaper/rock-matrix-whitepaper-zh.pdf"><img src="assets/readme-whitepaper-zh.svg" alt="白皮书" height="30" /></a>&nbsp;
+    <a href="https://arxiv.org/abs/2610.10118"><img src="assets/readme-arxiv.svg" alt="arXiv" height="30" /></a>
+  </p>
+  <p>
+    <a href="https://huggingface.co/rockmatrix-ai/EdgeRock"><img src="assets/readme-huggingface.svg" alt="Hugging Face" height="30" /></a>&nbsp;
     <a href="https://modelscope.cn/models/rockmatrix/EdgeRock"><img src="assets/readme-modelscope.svg" alt="ModelScope" height="30" /></a>
   </p>
-  <p><strong>岩芯矩阵技术白皮书：</strong><a href="docs/whitepaper/rock-matrix-whitepaper-zh.pdf">中文 PDF</a> · <a href="docs/whitepaper/rock-matrix-whitepaper-en.pdf">English PDF</a></p>
 </div>
 
 **强推理，KV 缓存不增长。** EdgeRock 是岩芯矩阵的固定记忆模型系列。首个开源版本 EdgeRock-4B 理解文本和图像，生成文本，用于推理、编程和 Agent 工作流。
@@ -36,7 +39,7 @@ Agent 和软件要随用随生，关键是生成快，而不只是读入需求�
 
 EdgeRock 和 DiffusionRock 可以独立使用，也可以组合。白皮书介绍完整的模型与芯片路线，本仓库提供 EdgeRock 的推理和评测代码。
 
-**阅读白皮书：**[中文 PDF](docs/whitepaper/rock-matrix-whitepaper-zh.pdf) · [English PDF](docs/whitepaper/rock-matrix-whitepaper-en.pdf) · [官网下载页](https://rockmatrix.ai/research/#whitepaper)
+**阅读白皮书：**[PDF](docs/whitepaper/rock-matrix-whitepaper-zh.pdf) · [官网下载页](https://rockmatrix.ai/research/#whitepaper)
 
 <a id="quick-start"></a>
 
@@ -688,7 +691,7 @@ EdgeRock 文本评测使用 temperature 0.6、top-p 0.95、top-k 20、presence p
 - [docs/runtime.md](docs/runtime.md)：计算精度、优化执行路径和复现条件。
 - [docs/results.md](docs/results.md)：有界状态模型、小型模型、源模型与视觉评测结果。
 - [技术报告](docs/report/EdgeRock_Technical_Report_zh-CN.pdf)。
-- 岩芯矩阵技术白皮书（2026 年 10 月）：[简体中文](docs/whitepaper/rock-matrix-whitepaper-zh.pdf) · [English](docs/whitepaper/rock-matrix-whitepaper-en.pdf)。
+- [岩芯矩阵技术白皮书](docs/whitepaper/rock-matrix-whitepaper-zh.pdf)（2026 年 10 月）。
 - [docs/report/latex/main.tex](docs/report/latex/main.tex)：技术报告源码及原始图表。
 - `runtime/`：推理、模型实现、优化算子、评测与判分。
 - [llms.txt](llms.txt)：模型定义、结果与推理文档的简明导航。

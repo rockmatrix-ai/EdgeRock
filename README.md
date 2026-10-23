@@ -1,13 +1,16 @@
 <div align="center">
   <h1><img src="assets/rockmatrix-transparent.png" alt="" width="44" height="44" align="absmiddle" /> EdgeRock</h1>
-  <p><strong>Strong Reasoning at Constant Memory</strong><br /><sub><a href="https://rockmatrix.ai">ROCK MATRIX · rockmatrix.ai</a></sub></p>
-  <p><b>English</b> · <a href="README_zh-CN.md">简体中文</a></p>
+  <p><strong>Strong Reasoning at Constant Memory</strong></p>
+  <p><a href="https://rockmatrix.ai">rockmatrix.ai</a> &nbsp;·&nbsp; <b>English</b> · <a href="README_zh-CN.md">简体中文</a></p>
   <p>
-    <a href="docs/report/EdgeRock_Technical_Report.pdf"><img src="assets/readme-report-en.svg" alt="Technical Report" height="30" /></a>
-    <a href="https://huggingface.co/rockmatrix-ai/EdgeRock"><img src="assets/readme-huggingface.svg" alt="Hugging Face" height="30" /></a>
+    <a href="docs/report/EdgeRock_Technical_Report.pdf"><img src="assets/readme-report-en.svg" alt="Technical Report" height="30" /></a>&nbsp;
+    <a href="docs/whitepaper/rock-matrix-whitepaper-en.pdf"><img src="assets/readme-whitepaper-en.svg" alt="Whitepaper" height="30" /></a>&nbsp;
+    <a href="https://arxiv.org/abs/2610.10118"><img src="assets/readme-arxiv.svg" alt="arXiv" height="30" /></a>
+  </p>
+  <p>
+    <a href="https://huggingface.co/rockmatrix-ai/EdgeRock"><img src="assets/readme-huggingface.svg" alt="Hugging Face" height="30" /></a>&nbsp;
     <a href="https://modelscope.cn/models/rockmatrix/EdgeRock"><img src="assets/readme-modelscope.svg" alt="ModelScope" height="30" /></a>
   </p>
-  <p><strong>Rock Matrix Whitepaper:</strong> <a href="docs/whitepaper/rock-matrix-whitepaper-en.pdf">English PDF</a> · <a href="docs/whitepaper/rock-matrix-whitepaper-zh.pdf">中文 PDF</a></p>
 </div>
 
 **Strong reasoning without a growing KV cache.** EdgeRock is Rock Matrix's fixed-memory model family. EdgeRock-4B, the first open-source release, understands text and images and generates text for reasoning, coding, and agent workflows.
@@ -36,7 +39,7 @@ On-demand agents and software need fast generation, not just fast prompt process
 
 EdgeRock and DiffusionRock can run independently or work together. The whitepaper sets out the broader model-and-hardware roadmap; this repository provides EdgeRock's inference and evaluation code.
 
-**Read the whitepaper:** [English PDF](docs/whitepaper/rock-matrix-whitepaper-en.pdf) · [中文 PDF](docs/whitepaper/rock-matrix-whitepaper-zh.pdf) · [Website](https://rockmatrix.ai/research/#whitepaper)
+**Read the whitepaper:** [PDF](docs/whitepaper/rock-matrix-whitepaper-en.pdf) · [Website](https://rockmatrix.ai/research/#whitepaper)
 
 <a id="quick-start"></a>
 
@@ -684,7 +687,7 @@ The 29-benchmark mean weights tasks equally after their subject/subtask aggregat
 
 - [Inference guide](USAGE.md) · [Runtime and reproduction](docs/runtime.md) · [Evaluation details](docs/results.md)
 - [Technical report](docs/report/EdgeRock_Technical_Report.pdf) · [LaTeX source](docs/report/latex/main.tex) · [Citation metadata](CITATION.cff)
-- Rock Matrix whitepaper (October 2026): [English](docs/whitepaper/rock-matrix-whitepaper-en.pdf) · [简体中文](docs/whitepaper/rock-matrix-whitepaper-zh.pdf)
+- [Rock Matrix whitepaper](docs/whitepaper/rock-matrix-whitepaper-en.pdf) (October 2026)
 - [Runtime source](runtime/) · [Documentation index for AI readers](llms.txt)
 
 <a id="frequently-asked-questions"></a>
